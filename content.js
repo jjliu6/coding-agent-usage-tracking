@@ -39,8 +39,8 @@ function makeAgent() {
     const wu = pct(/All models[\s\S]{0,60}?(\d+)%\s*used/i);
     if (wu == null) return null;
     const su = pct(/Current session[\s\S]{0,60}?(\d+)%\s*used/i);
-    const limits = [{ label: 'Weekly (All models)', percent_left: 100 - wu, resets_text: g(/All models[\s\S]{0,120}?Resets\s+([^\n]+)/i) }];
-    if (su != null) limits.push({ label: 'Session (5h)', percent_left: 100 - su, resets_text: g(/Current session[\s\S]{0,90}?Resets\s+([^\n]+)/i) });
+    const limits = [{ label: 'Weekly 额度 (All models)', percent_left: 100 - wu, resets_text: g(/All models[\s\S]{0,120}?Resets\s+([^\n]+)/i) }];
+    if (su != null) limits.push({ label: '当前会话 (5h)', percent_left: 100 - su, resets_text: g(/Current session[\s\S]{0,90}?Resets\s+([^\n]+)/i) });
     return { id: 'claude-code', name: 'Claude Code', color: '#D97757', limits };
   }
 
@@ -48,8 +48,8 @@ function makeAgent() {
     const wk = pct(/Weekly usage limit[\s\S]{0,40}?(\d+)%\s*remaining/i);
     if (wk == null) return null;
     const fh = pct(/5[\s-]?hour usage limit[\s\S]{0,40}?(\d+)%\s*remaining/i);
-    const limits = [{ label: 'Weekly', percent_left: wk, resets_text: null }];
-    if (fh != null) limits.push({ label: '5-hour limit', percent_left: fh, resets_text: g(/Resets\s+(\d{1,2}:\d{2}\s*[AP]M)/i) });
+    const limits = [{ label: 'Weekly 额度', percent_left: wk, resets_text: null }];
+    if (fh != null) limits.push({ label: '5 小时额度', percent_left: fh, resets_text: g(/Resets\s+(\d{1,2}:\d{2}\s*[AP]M)/i) });
     return { id: 'codex', name: 'Codex', color: '#5CD6B3', limits, credits: g(/Credits remaining[\s\S]{0,20}?(\d[\d,]*)/i) };
   }
 
@@ -57,7 +57,7 @@ function makeAgent() {
     const parsed = parseGrokUsage(T);
     if (!parsed) return null;
     return { id: 'grok-build', name: 'Grok Build', color: '#B78CF0',
-      limits: [{ label: 'Weekly (SuperGrok)', percent_left: 100 - parsed.used, resets_text: parsed.reset }],
+      limits: [{ label: 'Weekly 额度 (SuperGrok)', percent_left: 100 - parsed.used, resets_text: parsed.reset }],
       breakdown: parsed.breakdown };
   }
 

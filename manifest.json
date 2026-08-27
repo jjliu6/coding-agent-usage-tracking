@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Coding Agents Usage",
+  "name": "Coding Agents 额度",
   "version": "1.0.1",
-  "description": "See remaining usage for Claude Code, Codex, Grok Build and Cursor at a glance.",
+  "description": "一眼查看 Claude Code、Codex、Grok Build 和 Cursor 的剩余额度。",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Coding Agents Usage",
+    "default_title": "Coding Agents 额度",
     "default_icon": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }
   },
   "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },

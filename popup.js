@@ -24,11 +24,11 @@ const health = (p) => (p > 50 ? 'var(--good)' : p >= 20 ? 'var(--warn)' : 'var(-
 const ago = (ts) => {
   if (!ts) return '';
   const m = Math.round((Date.now() - ts) / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return m + 'm ago';
+  if (m < 1) return '刚刚';
+  if (m < 60) return m + ' 分钟前';
   const h = Math.round(m / 60);
-  if (h < 24) return h + 'h ago';
-  return Math.round(h / 24) + 'd ago';
+  if (h < 24) return h + ' 小时前';
+  return Math.round(h / 24) + ' 天前';
 };
 
 // 把各家五花八门的"重置时间"文字，统一解析成一个真实的日期
@@ -84,33 +84,33 @@ function parseReset(txt, now) {
 function untilText(d, now) {
   if (!d) return null;
   const ms = d - now;
-  if (ms <= 0) return 'resetting soon';
+  if (ms <= 0) return '即将重置';
   const days = ms / 86400000;
-  if (days >= 1) return `reset in ${Math.round(days)}d`;
+  if (days >= 1) return `还 ${Math.round(days)} 天重置`;
   const hrs = ms / 3600000;
-  if (hrs >= 1) return `reset in ${Math.round(hrs)}h`;
-  return `reset in ${Math.max(1, Math.round(ms / 60000))}m`;
+  if (hrs >= 1) return `还 ${Math.round(hrs)} 小时重置`;
+  return `还 ${Math.max(1, Math.round(ms / 60000))} 分钟重置`;
 }
 
 // 科学的判断：要有足够历史、并且拿"预计见底时间"和"真实重置时间"比，才敢说够不够
 function verdict(seg0, resetDate, now) {
-  if (!seg0 || seg0.length < 3) return { text: 'Burn rate: collecting… (need more data)', color: 'var(--muted)' };
+  if (!seg0 || seg0.length < 3) return { text: '消耗速度：记录中…（需更多数据）', color: 'var(--muted)' };
   seg0 = seg0.slice().sort((a, b) => a.t - b.t);
   let start = 0;
   for (let i = 1; i < seg0.length; i++) { if (seg0[i].pct > seg0[i - 1].pct + 2) start = i; } // 涨上去=重置过
   const seg = seg0.slice(start);
   const a = seg[0], b = seg[seg.length - 1];
   const span = (b.t - a.t) / 3600000; // 小时
-  if (seg.length < 3 || span < 4) return { text: 'Burn rate: collecting… (need more data)', color: 'var(--muted)' };
+  if (seg.length < 3 || span < 4) return { text: '消耗速度：记录中…（需更多数据）', color: 'var(--muted)' };
   const perH = (a.pct - b.pct) / span;
   const perDay = perH * 24;
-  if (perH < 0.1) return { text: 'Barely used lately', color: 'var(--ink2)' };
+  if (perH < 0.1) return { text: '近期几乎没消耗', color: 'var(--ink2)' };
   const h2z = b.pct / perH; // 还能撑多少小时到 0
   const h2r = resetDate ? (resetDate - now) / 3600000 : null; // 离重置多少小时
-  if (h2r != null && h2z > h2r) return { text: `Burning ~${perDay.toFixed(0)}%/day · lasts till reset`, color: 'var(--good)' };
-  const eta = h2z < 48 ? `~${Math.round(h2z)}h to empty` : `~${Math.round(h2z / 24)}d to empty`;
+  if (h2r != null && h2z > h2r) return { text: `消耗 ~${perDay.toFixed(0)}%/天 · 能撑到重置`, color: 'var(--good)' };
+  const eta = h2z < 48 ? `约 ${Math.round(h2z)} 小时后见底` : `约 ${Math.round(h2z / 24)} 天后见底`;
   const color = h2r != null ? 'var(--bad)' : (h2z < 24 ? 'var(--bad)' : h2z < 72 ? 'var(--warn)' : 'var(--ink2)');
-  return { text: `Burning ~${perDay.toFixed(0)}%/day · ${eta}${h2r != null ? ' (before reset!)' : ''}`, color };
+  return { text: `消耗 ~${perDay.toFixed(0)}%/天 · ${eta}${h2r != null ? ' (早于重置！)' : ''}`, color };
 }
 
 // 各产品的小标记（简约几何图形，不是官方 logo 的精确复制）
@@ -134,7 +134,19 @@ const BD_COLOR = {
   Voice: '#B78CF0',
   API: '#aab2c0',
 };
-const BD_SHORT = { 'App Builder': 'Build', Automations: 'Auto', Imagine: 'Img' };
+const BD_SHORT = { Chat: '聊天', 'App Builder': '构建', Automations: '自动', Imagine: '绘图', Voice: '语音', API: 'API' };
+const LIMIT_LABEL = {
+  'Weekly (All models)': 'Weekly 额度 (All models)',
+  'Session (5h)': '当前会话 (5h)',
+  Weekly: 'Weekly 额度',
+  '5-hour limit': '5 小时额度',
+  'Weekly (SuperGrok)': 'Weekly 额度 (SuperGrok)',
+  'This period': '本周期',
+};
+
+function limLabel(s) {
+  return LIMIT_LABEL[s] || s;
+}
 
 function breakdownBar(bd) {
   if (!bd || !bd.length) return '';
@@ -161,7 +173,7 @@ function card(id, a, hist) {
   if (!a) {
     return `<div class="card">
       <div class="chead"><div class="name">${logo(id, meta.color)}${meta.name}</div></div>
-      <div class="empty">No data yet — click "Refresh", or open its usage page in a normal tab.</div>
+      <div class="empty">暂无数据 — 点「刷新」，或在普通标签页打开对应额度页面。</div>
     </div>`;
   }
   const L = a.limits || [], p0 = L[0], p1 = L[1];
@@ -172,14 +184,14 @@ function card(id, a, hist) {
   const est = pct != null ? verdict(hist, resetDate, now) : null;
   const foot = [];
   if (a.tokens && a.tokens.total != null) foot.push(`${fmtTok(a.tokens.total)} tokens`);
-  if (a.credits && a.credits !== '0' && a.credits !== '$0.00') foot.push(`credits ${a.credits}`);
+  if (a.credits && a.credits !== '0' && a.credits !== '$0.00') foot.push(`积分 ${a.credits}`);
   else if (a.plan) foot.push(a.plan);
 
   const center = pct != null
-    ? `<b style="color:${health(pct)}">${pct}%</b><span>left</span>`
+    ? `<b style="color:${health(pct)}">${pct}%</b><span>剩余</span>`
     : `<b style="font-size:13px">${fmtTok(a.tokens && a.tokens.total)}</b><span>TOKENS</span>`;
   const sec = p1
-    ? `<div class="barwrap"><div class="t"><span>${p1.label}</span><span>${p1.percent_left}% left</span></div>
+    ? `<div class="barwrap"><div class="t"><span>${limLabel(p1.label)}</span><span>剩 ${p1.percent_left}%</span></div>
     <div class="bar"><i style="width:${p1.percent_left}%;background:${meta.color}"></i></div></div>`
     : breakdownBar(a.breakdown);
 
@@ -194,7 +206,7 @@ function card(id, a, hist) {
     <div class="mid">
       <div class="ring">${ring(pct == null ? 0 : pct, meta.color)}<div class="c">${center}</div></div>
       <div class="stats">
-        <div class="l0"><span>${p0 ? p0.label : (a.tokens ? 'This period' : '')}</span>${resetLabel ? `<span class="r">${resetLabel}</span>` : ''}</div>
+        <div class="l0"><span>${p0 ? limLabel(p0.label) : (a.tokens ? '本周期' : '')}</span>${resetLabel ? `<span class="r">${resetLabel}</span>` : ''}</div>
         ${sec}
       </div>
     </div>
@@ -216,17 +228,17 @@ function render() {
     let latest = 0;
     ORDER.forEach((id) => { if (map[id] && map[id].scraped_at > latest) latest = map[id].scraped_at; });
     document.getElementById('upd').textContent = latest
-      ? 'Updated ' + new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      ? new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' 更新'
       : '';
-    document.getElementById('hint').textContent = any ? '' : 'First time? Click "Refresh" to fetch data.';
+    document.getElementById('hint').textContent = any ? '' : '第一次用？点「刷新」拉取数据。';
   });
 }
 
 document.getElementById('refresh').addEventListener('click', () => {
   const btn = document.getElementById('refresh');
-  btn.textContent = 'Fetching…';
+  btn.textContent = '刷新中…';
   chrome.runtime.sendMessage({ type: 'refreshAll' });
-  setTimeout(() => { btn.textContent = 'Refresh'; }, 3000);
+  setTimeout(() => { btn.textContent = '刷新'; }, 3000);
 });
 
 chrome.storage.onChanged.addListener(render);

@@ -57,16 +57,17 @@ const html = popupCtx.card('grok-build', grok, []);
 const problems = [];
 if (!html.includes('>67%</b>')) problems.push('card should show 67% remaining, not the old 91%');
 if (html.includes('>91%</b>')) problems.push('card still shows the buggy 91% remaining');
-if (!html.includes('Chat 16%')) problems.push('missing Chat 16% in the breakdown legend');
-if (!html.includes('Build 10%')) problems.push('missing Build 10% in the breakdown legend');
-if (!html.includes('Auto 6%')) problems.push('missing Auto 6% in the breakdown legend');
-if (!html.includes('Img 1%')) problems.push('missing Img 1% in the breakdown legend');
+if (!html.includes('聊天 16%')) problems.push('missing 聊天 16% in the breakdown legend');
+if (!html.includes('构建 10%')) problems.push('missing 构建 10% in the breakdown legend');
+if (!html.includes('自动 6%')) problems.push('missing 自动 6% in the breakdown legend');
+if (!html.includes('绘图 1%')) problems.push('missing 绘图 1% in the breakdown legend');
 if (!html.includes('bar stacked')) problems.push('missing stacked usage bar');
+if (!html.includes('剩余')) problems.push('card should use 剩余 instead of left');
 
 if (problems.length) {
   console.error(html);
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log('ok  Grok card shows 67% remaining with Chat/Build/Auto/Img slices');
+console.log('ok  Grok 卡片显示 67% 剩余，以及 聊天/构建/自动/绘图 分类');
 console.log('\nPopup card test passed.');
