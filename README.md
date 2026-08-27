@@ -3,6 +3,10 @@
 A Chrome (Manifest V3) browser extension that shows your remaining usage for
 **Claude Code, Codex, Grok Build and Cursor** at a glance — in one popup.
 
+![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, and Cursor](docs/dashboard.webp)
+
+<sub>Example popup with sample data.</sub>
+
 ## What it does
 
 - One click shows the remaining weekly / short-term quota for all four agents, and when each one resets.
