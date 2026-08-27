@@ -15,6 +15,10 @@ const FG_URLS = [
 
 let refreshing = false;
 
+if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+}
+
 function setRefresh(partial) {
   chrome.storage.local.get(['refresh'], (res) => {
     chrome.storage.local.set({ refresh: Object.assign({ running: false }, res.refresh, partial) });

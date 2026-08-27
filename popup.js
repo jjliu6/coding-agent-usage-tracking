@@ -242,59 +242,20 @@ function render() {
   });
 }
 
-// Toolbar popups close as soon as a scrape tab is focused. Open the side panel
-// first so the dashboard stays on screen and live-updates as numbers arrive.
-function openLiveDashboard(then) {
-  const kick = () => {
-    chrome.runtime.sendMessage({ type: 'refreshAll' });
-    if (typeof then === 'function') then();
-  };
-  if (!chrome.sidePanel || !chrome.windows || !chrome.windows.getLastFocused) {
-    kick();
-    return;
-  }
-  chrome.windows.getLastFocused({ windowTypes: ['normal'] }, (win) => {
-    if (chrome.runtime.lastError || !win || win.id == null) {
-      kick();
-      return;
-    }
-    const p = chrome.sidePanel.open({ windowId: win.id });
-    const fail = () => {
-      if (chrome.windows.create && chrome.runtime.getURL) {
-        chrome.windows.create({
-          url: chrome.runtime.getURL('popup.html'),
-          type: 'popup',
-          width: 640,
-          height: 580,
-          focused: true,
-        }, kick);
-      } else {
-        kick();
-      }
-    };
-    if (p && typeof p.then === 'function') p.then(kick, fail);
-    else kick();
-  });
-}
-
+// 刷新只负责抓数。看板已经在侧边栏里，不要再开工具栏弹窗或独立窗口，
+// 否则会叠出多层界面疯狂闪烁。
 function startRefresh() {
   const btn = document.getElementById('refresh');
-  if (btn) { btn.textContent = '刷新中…'; btn.disabled = true; }
+  if (btn) {
+    if (btn.disabled) return;
+    btn.textContent = '刷新中…';
+    btn.disabled = true;
+  }
   chrome.storage.local.set({ refresh: { running: true, started: Date.now() } });
-  openLiveDashboard();
-}
-
-function fitHost() {
-  if (!chrome.runtime || !chrome.runtime.getContexts) return;
-  chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] }).then((ctxs) => {
-    const here = location.href.split('#')[0];
-    const side = (ctxs || []).some((c) => (c.documentUrl || '').split('#')[0] === here);
-    if (side) document.body.classList.add('host-side');
-  }).catch(() => {});
+  chrome.runtime.sendMessage({ type: 'refreshAll' });
 }
 
 document.getElementById('refresh').addEventListener('click', startRefresh);
 
 chrome.storage.onChanged.addListener(render);
-fitHost();
 render();

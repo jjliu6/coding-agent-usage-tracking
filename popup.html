@@ -5,7 +5,7 @@
 <style>
   :root{--card2:#1f232c;--ink:#eef1f6;--ink2:#aab2c0;--muted:#6b7382;--track:#2a2f3a;--line:#23272f;--good:#5ccf9e;--warn:#e6b45c;--bad:#e57373}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{width:600px;background:#14161c;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);padding:13px}
+  body{width:100%;max-width:600px;background:#14161c;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);padding:13px}
   .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .brand{font-weight:700;letter-spacing:.12em;font-size:12px}
   .brand .s{color:#8fe3c6}
@@ -15,7 +15,6 @@
   .btn{font-size:11px;color:var(--ink);background:#2a2f3a;border:none;border-radius:8px;padding:5px 12px;cursor:pointer}
   .btn:hover{background:#333a46}
   .btn:disabled{opacity:.6;cursor:default}
-  body.host-side{width:100%;max-width:600px}
   .grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;align-items:start}
   .stats{overflow:hidden}
   .l0 span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

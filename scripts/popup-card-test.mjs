@@ -38,8 +38,10 @@ const grok = {
 
 let sent = [];
 let sideOpened = 0;
-const popupSrc = readFileSync(resolve(root, 'popup.js'), 'utf8');
+let windowsCreated = 0;
 const noop = () => {};
+const btnState = { addEventListener: noop, textContent: '', innerHTML: '', disabled: false, classList: { add: noop } };
+const popupSrc = readFileSync(resolve(root, 'popup.js'), 'utf8');
 const popupCtx = {
   chrome: {
     storage: {
@@ -53,10 +55,13 @@ const popupCtx = {
       lastError: null,
     },
     sidePanel: { open: ({ windowId }) => { sideOpened++; popupCtx._openedWindowId = windowId; return Promise.resolve(); } },
-    windows: { getLastFocused: (_opts, cb) => cb({ id: 42, type: 'normal' }) },
+    windows: {
+      getLastFocused: (_opts, cb) => cb({ id: 42, type: 'normal' }),
+      create: () => { windowsCreated++; },
+    },
   },
   document: {
-    getElementById: () => ({ addEventListener: noop, textContent: '', innerHTML: '', disabled: false, classList: { add: noop } }),
+    getElementById: () => btnState,
     body: { classList: { add: noop }, style: {} },
   },
   location: { href: 'chrome-extension://id/popup.html' },
@@ -84,20 +89,25 @@ console.log('ok  Grok 卡片显示 67% 剩余，以及 聊天/构建/自动/绘�
 
 sent = [];
 sideOpened = 0;
+windowsCreated = 0;
+btnState.disabled = false;
 popupCtx.startRefresh();
-await Promise.resolve();
-await Promise.resolve();
-if (sideOpened !== 1) {
-  console.error('expected side panel to open once on Refresh, got', sideOpened);
-  process.exit(1);
-}
-if (popupCtx._openedWindowId !== 42) {
-  console.error('side panel should open on the current window');
-  process.exit(1);
-}
+popupCtx.startRefresh();
 if (!sent.some((m) => m && m.type === 'refreshAll')) {
-  console.error('expected refreshAll after opening the side panel, got', sent);
+  console.error('expected refreshAll, got', sent);
   process.exit(1);
 }
-console.log('ok  刷新会先打开侧边栏再开始抓取');
+if (sent.filter((m) => m && m.type === 'refreshAll').length !== 1) {
+  console.error('Refresh should fire once while the button is disabled, got', sent);
+  process.exit(1);
+}
+if (sideOpened !== 0) {
+  console.error('Refresh must not open another side panel, got', sideOpened);
+  process.exit(1);
+}
+if (windowsCreated !== 0) {
+  console.error('Refresh must not create extra popup windows (the flashing bug), got', windowsCreated);
+  process.exit(1);
+}
+console.log('ok  刷新只抓数，不叠窗口');
 console.log('\nPopup card test passed.');
