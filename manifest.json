@@ -1,10 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Coding Agents Usage",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "See remaining usage for Claude Code, Codex, Grok Build and Cursor at a glance.",
   "action": {
-    "default_popup": "popup.html",
     "default_title": "Coding Agents Usage",
     "default_icon": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }
   },

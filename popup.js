@@ -222,7 +222,7 @@ function render() {
       : '';
     if (rf.running) {
       if (btn) { btn.textContent = 'Fetching…'; btn.disabled = true; }
-      document.getElementById('hint').textContent = 'Fetching… tabs may flash open and close. Results stay in this panel.';
+      document.getElementById('hint').textContent = 'Fetching… tabs may flash open and close. Results stay in this side panel.';
     } else {
       if (btn) { btn.textContent = 'Refresh'; btn.disabled = false; }
       document.getElementById('hint').textContent = any ? '' : 'First time? Click "Refresh" to fetch data.';
@@ -230,59 +230,20 @@ function render() {
   });
 }
 
-// Toolbar popups close as soon as a scrape tab is focused. Open the side panel
-// first so the dashboard stays on screen and live-updates as numbers arrive.
-function openLiveDashboard(then) {
-  const kick = () => {
-    chrome.runtime.sendMessage({ type: 'refreshAll' });
-    if (typeof then === 'function') then();
-  };
-  if (!chrome.sidePanel || !chrome.windows || !chrome.windows.getLastFocused) {
-    kick();
-    return;
-  }
-  chrome.windows.getLastFocused({ windowTypes: ['normal'] }, (win) => {
-    if (chrome.runtime.lastError || !win || win.id == null) {
-      kick();
-      return;
-    }
-    const p = chrome.sidePanel.open({ windowId: win.id });
-    const fail = () => {
-      if (chrome.windows.create && chrome.runtime.getURL) {
-        chrome.windows.create({
-          url: chrome.runtime.getURL('popup.html'),
-          type: 'popup',
-          width: 640,
-          height: 580,
-          focused: true,
-        }, kick);
-      } else {
-        kick();
-      }
-    };
-    if (p && typeof p.then === 'function') p.then(kick, fail);
-    else kick();
-  });
-}
-
+// Refresh only scrapes. The dashboard already lives in the side panel —
+// do not open the toolbar popup or extra windows (that stacks flashing UIs).
 function startRefresh() {
   const btn = document.getElementById('refresh');
-  if (btn) { btn.textContent = 'Fetching…'; btn.disabled = true; }
+  if (btn) {
+    if (btn.disabled) return;
+    btn.textContent = 'Fetching…';
+    btn.disabled = true;
+  }
   chrome.storage.local.set({ refresh: { running: true, started: Date.now() } });
-  openLiveDashboard();
-}
-
-function fitHost() {
-  if (!chrome.runtime || !chrome.runtime.getContexts) return;
-  chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] }).then((ctxs) => {
-    const here = location.href.split('#')[0];
-    const side = (ctxs || []).some((c) => (c.documentUrl || '').split('#')[0] === here);
-    if (side) document.body.classList.add('host-side');
-  }).catch(() => {});
+  chrome.runtime.sendMessage({ type: 'refreshAll' });
 }
 
 document.getElementById('refresh').addEventListener('click', startRefresh);
 
 chrome.storage.onChanged.addListener(render);
-fitHost();
 render();
