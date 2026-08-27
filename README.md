@@ -38,3 +38,7 @@ helpers for validating and packaging it (installed with `npm install`).
 
 Unofficial and not affiliated with Anthropic, OpenAI, xAI, or Cursor. It only
 reads usage numbers already shown on each product's own page.
+
+---
+
+Built by Junjie Liu at [Philosophie AI](https://philosophie.ai).
