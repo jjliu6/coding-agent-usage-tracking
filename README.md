@@ -41,4 +41,4 @@ reads usage numbers already shown on each product's own page.
 
 ---
 
-Built by Junjie Liu at [Philosophie AI](https://philosophie.ai).
+Built by [Junjie Liu](https://www.linkedin.com/in/junjieliu/) at [Philosophie AI](https://philosophie.ai).
