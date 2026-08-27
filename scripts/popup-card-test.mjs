@@ -36,19 +36,30 @@ const grok = {
   breakdown: parsed.breakdown,
 };
 
+let sent = [];
+let sideOpened = 0;
 const popupSrc = readFileSync(resolve(root, 'popup.js'), 'utf8');
 const noop = () => {};
 const popupCtx = {
   chrome: {
     storage: {
-      local: { get: (_keys, cb) => cb && cb({ agents: {}, history: [] }) },
+      local: { get: (_keys, cb) => cb && cb({ agents: {}, history: [] }), set: noop },
       onChanged: { addListener: noop },
     },
-    runtime: { sendMessage: noop },
+    runtime: {
+      sendMessage: (msg) => { sent.push(msg); },
+      getContexts: () => Promise.resolve([]),
+      getURL: (p) => p,
+      lastError: null,
+    },
+    sidePanel: { open: ({ windowId }) => { sideOpened++; popupCtx._openedWindowId = windowId; return Promise.resolve(); } },
+    windows: { getLastFocused: (_opts, cb) => cb({ id: 42, type: 'normal' }) },
   },
   document: {
-    getElementById: () => ({ addEventListener: noop, textContent: '', innerHTML: '' }),
+    getElementById: () => ({ addEventListener: noop, textContent: '', innerHTML: '', disabled: false, classList: { add: noop } }),
+    body: { classList: { add: noop }, style: {} },
   },
+  location: { href: 'chrome-extension://id/popup.html' },
   setTimeout: noop,
 };
 vm.runInNewContext(popupSrc, popupCtx, { filename: 'popup.js' });
@@ -70,4 +81,23 @@ if (problems.length) {
   process.exit(1);
 }
 console.log('ok  Grok 卡片显示 67% 剩余，以及 聊天/构建/自动/绘图 分类');
+
+sent = [];
+sideOpened = 0;
+popupCtx.startRefresh();
+await Promise.resolve();
+await Promise.resolve();
+if (sideOpened !== 1) {
+  console.error('expected side panel to open once on Refresh, got', sideOpened);
+  process.exit(1);
+}
+if (popupCtx._openedWindowId !== 42) {
+  console.error('side panel should open on the current window');
+  process.exit(1);
+}
+if (!sent.some((m) => m && m.type === 'refreshAll')) {
+  console.error('expected refreshAll after opening the side panel, got', sent);
+  process.exit(1);
+}
+console.log('ok  刷新会先打开侧边栏再开始抓取');
 console.log('\nPopup card test passed.');

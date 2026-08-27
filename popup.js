@@ -216,7 +216,7 @@ function card(id, a, hist) {
 }
 
 function render() {
-  chrome.storage.local.get(['agents', 'history'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const byId = {};
@@ -224,22 +224,77 @@ function render() {
     document.getElementById('grid').innerHTML =
       ORDER.map((id) => card(id, map[id], byId[id])).join('');
     const any = ORDER.some((id) => map[id]);
+    const rf = res.refresh || {};
+    const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
     let latest = 0;
     ORDER.forEach((id) => { if (map[id] && map[id].scraped_at > latest) latest = map[id].scraped_at; });
     document.getElementById('upd').textContent = latest
       ? new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' 更新'
       : '';
-    document.getElementById('hint').textContent = any ? '' : '第一次用？点「刷新」拉取数据。';
+    if (rf.running) {
+      if (btn) { btn.textContent = '刷新中…'; btn.disabled = true; }
+      document.getElementById('hint').textContent = '正在抓取… 标签页会闪一下自动开关，结果会留在这个侧边栏里。';
+    } else {
+      if (btn) { btn.textContent = '刷新'; btn.disabled = false; }
+      document.getElementById('hint').textContent = any ? '' : '第一次用？点「刷新」拉取数据。';
+    }
   });
 }
 
-document.getElementById('refresh').addEventListener('click', () => {
+// Toolbar popups close as soon as a scrape tab is focused. Open the side panel
+// first so the dashboard stays on screen and live-updates as numbers arrive.
+function openLiveDashboard(then) {
+  const kick = () => {
+    chrome.runtime.sendMessage({ type: 'refreshAll' });
+    if (typeof then === 'function') then();
+  };
+  if (!chrome.sidePanel || !chrome.windows || !chrome.windows.getLastFocused) {
+    kick();
+    return;
+  }
+  chrome.windows.getLastFocused({ windowTypes: ['normal'] }, (win) => {
+    if (chrome.runtime.lastError || !win || win.id == null) {
+      kick();
+      return;
+    }
+    const p = chrome.sidePanel.open({ windowId: win.id });
+    const fail = () => {
+      if (chrome.windows.create && chrome.runtime.getURL) {
+        chrome.windows.create({
+          url: chrome.runtime.getURL('popup.html'),
+          type: 'popup',
+          width: 640,
+          height: 580,
+          focused: true,
+        }, kick);
+      } else {
+        kick();
+      }
+    };
+    if (p && typeof p.then === 'function') p.then(kick, fail);
+    else kick();
+  });
+}
+
+function startRefresh() {
   const btn = document.getElementById('refresh');
-  btn.textContent = '刷新中…';
-  chrome.runtime.sendMessage({ type: 'refreshAll' });
-  setTimeout(() => { btn.textContent = '刷新'; }, 3000);
-});
+  if (btn) { btn.textContent = '刷新中…'; btn.disabled = true; }
+  chrome.storage.local.set({ refresh: { running: true, started: Date.now() } });
+  openLiveDashboard();
+}
+
+function fitHost() {
+  if (!chrome.runtime || !chrome.runtime.getContexts) return;
+  chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] }).then((ctxs) => {
+    const here = location.href.split('#')[0];
+    const side = (ctxs || []).some((c) => (c.documentUrl || '').split('#')[0] === here);
+    if (side) document.body.classList.add('host-side');
+  }).catch(() => {});
+}
+
+document.getElementById('refresh').addEventListener('click', startRefresh);
 
 chrome.storage.onChanged.addListener(render);
+fitHost();
 render();
