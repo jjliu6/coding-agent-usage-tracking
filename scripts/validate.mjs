@@ -54,6 +54,11 @@ if (manifest) {
 
 // popup.js is loaded via popup.html, add it explicitly too.
 jsFiles.add('popup.js');
+jsFiles.add('i18n.js');
+if (manifest && !manifest.default_locale) fail('manifest.json is missing default_locale (required for i18n).');
+if (!existsSync(resolve(root, '_locales/en/messages.json'))) fail('Missing _locales/en/messages.json');
+if (!existsSync(resolve(root, '_locales/zh_CN/messages.json'))) fail('Missing _locales/zh_CN/messages.json');
+if (!existsSync(resolve(root, '_locales/zh/messages.json'))) fail('Missing _locales/zh/messages.json');
 
 for (const rel of jsFiles) {
   const abs = resolve(root, rel);

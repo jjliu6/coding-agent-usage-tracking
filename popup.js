@@ -24,11 +24,11 @@ const health = (p) => (p > 50 ? 'var(--good)' : p >= 20 ? 'var(--warn)' : 'var(-
 const ago = (ts) => {
   if (!ts) return '';
   const m = Math.round((Date.now() - ts) / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return m + 'm ago';
+  if (m < 1) return t('justNow');
+  if (m < 60) return t('minsAgo', { n: m });
   const h = Math.round(m / 60);
-  if (h < 24) return h + 'h ago';
-  return Math.round(h / 24) + 'd ago';
+  if (h < 24) return t('hoursAgo', { n: h });
+  return t('daysAgo', { n: Math.round(h / 24) });
 };
 
 // 把各家五花八门的"重置时间"文字，统一解析成一个真实的日期
@@ -84,33 +84,33 @@ function parseReset(txt, now) {
 function untilText(d, now) {
   if (!d) return null;
   const ms = d - now;
-  if (ms <= 0) return 'resetting soon';
+  if (ms <= 0) return t('resettingSoon');
   const days = ms / 86400000;
-  if (days >= 1) return `reset in ${Math.round(days)}d`;
+  if (days >= 1) return t('resetInDays', { n: Math.round(days) });
   const hrs = ms / 3600000;
-  if (hrs >= 1) return `reset in ${Math.round(hrs)}h`;
-  return `reset in ${Math.max(1, Math.round(ms / 60000))}m`;
+  if (hrs >= 1) return t('resetInHours', { n: Math.round(hrs) });
+  return t('resetInMins', { n: Math.max(1, Math.round(ms / 60000)) });
 }
 
 // 科学的判断：要有足够历史、并且拿"预计见底时间"和"真实重置时间"比，才敢说够不够
 function verdict(seg0, resetDate, now) {
-  if (!seg0 || seg0.length < 3) return { text: 'Burn rate: collecting… (need more data)', color: 'var(--muted)' };
+  if (!seg0 || seg0.length < 3) return { text: t('burnCollecting'), color: 'var(--muted)' };
   seg0 = seg0.slice().sort((a, b) => a.t - b.t);
   let start = 0;
   for (let i = 1; i < seg0.length; i++) { if (seg0[i].pct > seg0[i - 1].pct + 2) start = i; } // 涨上去=重置过
   const seg = seg0.slice(start);
   const a = seg[0], b = seg[seg.length - 1];
   const span = (b.t - a.t) / 3600000; // 小时
-  if (seg.length < 3 || span < 4) return { text: 'Burn rate: collecting… (need more data)', color: 'var(--muted)' };
+  if (seg.length < 3 || span < 4) return { text: t('burnCollecting'), color: 'var(--muted)' };
   const perH = (a.pct - b.pct) / span;
   const perDay = perH * 24;
-  if (perH < 0.1) return { text: 'Barely used lately', color: 'var(--ink2)' };
+  if (perH < 0.1) return { text: t('burnBarely'), color: 'var(--ink2)' };
   const h2z = b.pct / perH; // 还能撑多少小时到 0
   const h2r = resetDate ? (resetDate - now) / 3600000 : null; // 离重置多少小时
-  if (h2r != null && h2z > h2r) return { text: `Burning ~${perDay.toFixed(0)}%/day · lasts till reset`, color: 'var(--good)' };
-  const eta = h2z < 48 ? `~${Math.round(h2z)}h to empty` : `~${Math.round(h2z / 24)}d to empty`;
+  if (h2r != null && h2z > h2r) return { text: t('burnTillReset', { n: perDay.toFixed(0) }), color: 'var(--good)' };
+  const eta = h2z < 48 ? t('burnEmptyHours', { n: Math.round(h2z) }) : t('burnEmptyDays', { n: Math.round(h2z / 24) });
   const color = h2r != null ? 'var(--bad)' : (h2z < 24 ? 'var(--bad)' : h2z < 72 ? 'var(--warn)' : 'var(--ink2)');
-  return { text: `Burning ~${perDay.toFixed(0)}%/day · ${eta}${h2r != null ? ' (before reset!)' : ''}`, color };
+  return { text: t('burnLine', { n: perDay.toFixed(0), eta }) + (h2r != null ? t('burnBefore') : ''), color };
 }
 
 // 各产品的小标记（简约几何图形，不是官方 logo 的精确复制）
@@ -134,7 +134,40 @@ const BD_COLOR = {
   Voice: '#B78CF0',
   API: '#aab2c0',
 };
-const BD_SHORT = { 'App Builder': 'Build', Automations: 'Auto', Imagine: 'Img' };
+const BD_SHORT_KEY = {
+  Chat: 'chat',
+  'App Builder': 'build',
+  Automations: 'auto',
+  Imagine: 'imagine',
+  Voice: 'voice',
+  API: 'api',
+};
+const LIMIT_KEYS = {
+  'Weekly (All models)': 'weeklyAll',
+  'Weekly 额度 (All models)': 'weeklyAll',
+  'Session (5h)': 'session5h',
+  '当前会话 (5h)': 'session5h',
+  Weekly: 'weekly',
+  'Weekly 额度': 'weekly',
+  '5-hour limit': 'fiveHour',
+  '5 小时额度': 'fiveHour',
+  'Weekly (SuperGrok)': 'weeklyGrok',
+  'Weekly 额度 (SuperGrok)': 'weeklyGrok',
+  'Cursor Models': 'cursorModels',
+  'Other Models': 'otherModels',
+  'This period': 'thisPeriod',
+  本周期: 'thisPeriod',
+};
+
+function limLabel(s) {
+  const key = LIMIT_KEYS[s];
+  return key ? t(key) : s;
+}
+
+function bdShort(name) {
+  const key = BD_SHORT_KEY[name];
+  return key ? t(key) : name;
+}
 
 function breakdownBar(bd) {
   if (!bd || !bd.length) return '';
@@ -142,7 +175,7 @@ function breakdownBar(bd) {
     const c = BD_COLOR[x.name] || '#8a92a0';
     return `<i title="${x.name} ${x.percent}%" style="width:${x.percent}%;background:${c}"></i>`;
   }).join('');
-  const legend = bd.map((x) => `${BD_SHORT[x.name] || x.name} ${x.percent}%`).join(' · ');
+  const legend = bd.map((x) => `${bdShort(x.name)} ${x.percent}%`).join(' · ');
   return `<div class="barwrap"><div class="t"><span>${legend}</span></div>
     <div class="bar stacked">${segs}</div></div>`;
 }
@@ -161,7 +194,7 @@ function card(id, a, hist) {
   if (!a) {
     return `<div class="card">
       <div class="chead"><div class="name">${logo(id, meta.color)}${meta.name}</div></div>
-      <div class="empty">No data yet — click "Refresh", or open its usage page in a normal tab.</div>
+      <div class="empty">${t('empty')}</div>
     </div>`;
   }
   const L = a.limits || [], p0 = L[0], p1 = L[1];
@@ -171,15 +204,15 @@ function card(id, a, hist) {
   const resetLabel = untilText(resetDate, now) || (p0 && p0.resets_text) || '';
   const est = pct != null ? verdict(hist, resetDate, now) : null;
   const foot = [];
-  if (a.tokens && a.tokens.total != null) foot.push(`${fmtTok(a.tokens.total)} tokens`);
-  if (a.credits && a.credits !== '0' && a.credits !== '$0.00') foot.push(`credits ${a.credits}`);
+  if (a.tokens && a.tokens.total != null) foot.push(t('tokens', { n: fmtTok(a.tokens.total) }));
+  if (a.credits && a.credits !== '0' && a.credits !== '$0.00') foot.push(t('credits', { n: a.credits }));
   else if (a.plan) foot.push(a.plan);
 
   const center = pct != null
-    ? `<b style="color:${health(pct)}">${pct}%</b><span>left</span>`
+    ? `<b style="color:${health(pct)}">${pct}%</b><span>${t('left')}</span>`
     : `<b style="font-size:13px">${fmtTok(a.tokens && a.tokens.total)}</b><span>TOKENS</span>`;
   const sec = p1
-    ? `<div class="barwrap"><div class="t"><span>${p1.label}</span><span>${p1.percent_left}% left</span></div>
+    ? `<div class="barwrap"><div class="t"><span>${limLabel(p1.label)}</span><span>${t('pctLeft', { n: p1.percent_left })}</span></div>
     <div class="bar"><i style="width:${p1.percent_left}%;background:${meta.color}"></i></div></div>`
     : breakdownBar(a.breakdown);
 
@@ -194,7 +227,7 @@ function card(id, a, hist) {
     <div class="mid">
       <div class="ring">${ring(pct == null ? 0 : pct, meta.color)}<div class="c">${center}</div></div>
       <div class="stats">
-        <div class="l0"><span>${p0 ? p0.label : (a.tokens ? 'This period' : '')}</span>${resetLabel ? `<span class="r">${resetLabel}</span>` : ''}</div>
+        <div class="l0"><span>${p0 ? limLabel(p0.label) : (a.tokens ? t('thisPeriod') : '')}</span>${resetLabel ? `<span class="r">${resetLabel}</span>` : ''}</div>
         ${sec}
       </div>
     </div>
@@ -204,7 +237,7 @@ function card(id, a, hist) {
 }
 
 function render() {
-  chrome.storage.local.get(['agents', 'history'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const byId = {};
@@ -212,22 +245,47 @@ function render() {
     document.getElementById('grid').innerHTML =
       ORDER.map((id) => card(id, map[id], byId[id])).join('');
     const any = ORDER.some((id) => map[id]);
+    const rf = res.refresh || {};
+    const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
     let latest = 0;
     ORDER.forEach((id) => { if (map[id] && map[id].scraped_at > latest) latest = map[id].scraped_at; });
     document.getElementById('upd').textContent = latest
-      ? 'Updated ' + new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      ? t('updated', { time: new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })
       : '';
-    document.getElementById('hint').textContent = any ? '' : 'First time? Click "Refresh" to fetch data.';
+    if (rf.running) {
+      if (btn) { btn.textContent = t('fetching'); btn.disabled = true; }
+      document.getElementById('hint').textContent = t('fetchingHint');
+    } else {
+      if (btn) { btn.textContent = t('refresh'); btn.disabled = false; }
+      document.getElementById('hint').textContent = any ? '' : t('firstTime');
+    }
   });
 }
 
-document.getElementById('refresh').addEventListener('click', () => {
+// Refresh only scrapes. The dashboard already lives in the side panel —
+// do not open the toolbar popup or extra windows (that stacks flashing UIs).
+function startRefresh() {
   const btn = document.getElementById('refresh');
-  btn.textContent = 'Fetching…';
+  if (btn) {
+    if (btn.disabled) return;
+    btn.textContent = t('fetching');
+    btn.disabled = true;
+  }
+  chrome.storage.local.set({ refresh: { running: true, started: Date.now() } });
   chrome.runtime.sendMessage({ type: 'refreshAll' });
-  setTimeout(() => { btn.textContent = 'Refresh'; }, 3000);
-});
+}
 
-chrome.storage.onChanged.addListener(render);
-render();
+document.getElementById('refresh').addEventListener('click', startRefresh);
+const langBtn = document.getElementById('lang');
+if (langBtn) {
+  langBtn.addEventListener('click', () => {
+    setLang(currentLang() === 'zh' ? 'en' : 'zh', render);
+  });
+}
+
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes && changes.uiLang) applyStoredLang(changes.uiLang.newValue);
+  render();
+});
+loadLang(render);

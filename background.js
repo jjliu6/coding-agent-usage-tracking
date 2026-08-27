@@ -15,6 +15,16 @@ const FG_URLS = [
 
 let refreshing = false;
 
+if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+}
+
+function setRefresh(partial) {
+  chrome.storage.local.get(['refresh'], (res) => {
+    chrome.storage.local.set({ refresh: Object.assign({ running: false }, res.refresh, partial) });
+  });
+}
+
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg && msg.type === 'closeMe' && sender.tab && sender.tab.id != null) {
     chrome.tabs.remove(sender.tab.id, () => void chrome.runtime.lastError);
@@ -51,7 +61,10 @@ function openAndWait(url, active, maxMs) {
 async function runRefresh() {
   if (refreshing) return;
   refreshing = true;
+  setRefresh({ running: true, started: Date.now(), finished: null });
   try {
+    chrome.action.setBadgeText({ text: '…' });
+    chrome.action.setBadgeBackgroundColor({ color: '#6E9BF5' });
     // 轻页面：后台并行
     BG_URLS.forEach((u) => openAndWait(u, false, 25000));
     // 重页面：前台逐个，抓到即关
@@ -60,5 +73,7 @@ async function runRefresh() {
     }
   } finally {
     refreshing = false;
+    setRefresh({ running: false, finished: Date.now() });
+    chrome.action.setBadgeText({ text: '' });
   }
 }

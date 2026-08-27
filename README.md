@@ -19,14 +19,17 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 1. Open `chrome://extensions` in Chrome.
 2. Turn on **Developer mode** (top-right).
 3. Click **Load unpacked** and select this repository's folder.
-4. Click **Refresh** in the popup (or open a product's usage page in a normal tab) to populate the data.
+4. Click the toolbar icon. The dashboard opens in the **side panel** so it stays visible while Refresh scrapes.
+5. Click **Refresh** (or open a product's usage page in a normal tab) to populate the data.
+6. The dashboard defaults to **English**. Click **中文** / **EN** in the header to switch; the choice is stored locally (`uiLang`) and does not follow Chrome's UI language.
 
 ## Files
 
 - `manifest.json` — extension manifest (Manifest V3)
 - `background.js` — service worker that coordinates the "Refresh" flow
 - `content.js` — content script that reads usage numbers from each product page
-- `popup.html` / `popup.js` — the toolbar popup dashboard
+- `popup.html` / `popup.js` / `i18n.js` — the side-panel dashboard (English / 中文)
+- `_locales/` — Chrome Store / `chrome://extensions` name and description
 - `icons/` — extension icons
 
 ## Development
