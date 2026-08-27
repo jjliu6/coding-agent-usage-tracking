@@ -126,6 +126,27 @@ function logo(id, c) {
   return `<span style="width:10px;height:10px;border-radius:3px;background:${c};display:inline-block"></span>`;
 }
 
+const BD_COLOR = {
+  Chat: '#5ccf9e',
+  'App Builder': '#6E9BF5',
+  Automations: '#e6b45c',
+  Imagine: '#e57373',
+  Voice: '#B78CF0',
+  API: '#aab2c0',
+};
+const BD_SHORT = { 'App Builder': 'Build', Automations: 'Auto', Imagine: 'Img' };
+
+function breakdownBar(bd) {
+  if (!bd || !bd.length) return '';
+  const segs = bd.map((x) => {
+    const c = BD_COLOR[x.name] || '#8a92a0';
+    return `<i title="${x.name} ${x.percent}%" style="width:${x.percent}%;background:${c}"></i>`;
+  }).join('');
+  const legend = bd.map((x) => `${BD_SHORT[x.name] || x.name} ${x.percent}%`).join(' · ');
+  return `<div class="barwrap"><div class="t"><span>${legend}</span></div>
+    <div class="bar stacked">${segs}</div></div>`;
+}
+
 function ring(pct, color) {
   const R = 28, C = 2 * Math.PI * R, off = C * (1 - (pct || 0) / 100);
   return `<svg width="66" height="66" viewBox="0 0 66 66">
@@ -157,8 +178,10 @@ function card(id, a, hist) {
   const center = pct != null
     ? `<b style="color:${health(pct)}">${pct}%</b><span>left</span>`
     : `<b style="font-size:13px">${fmtTok(a.tokens && a.tokens.total)}</b><span>TOKENS</span>`;
-  const sec = p1 ? `<div class="barwrap"><div class="t"><span>${p1.label}</span><span>${p1.percent_left}% left</span></div>
-    <div class="bar"><i style="width:${p1.percent_left}%;background:${meta.color}"></i></div></div>` : '';
+  const sec = p1
+    ? `<div class="barwrap"><div class="t"><span>${p1.label}</span><span>${p1.percent_left}% left</span></div>
+    <div class="bar"><i style="width:${p1.percent_left}%;background:${meta.color}"></i></div></div>`
+    : breakdownBar(a.breakdown);
 
   let burn = '';
   if (est) burn = `<div style="font-size:10.5px;margin-top:9px;color:${est.color}">🔥 ${est.text}</div>`;

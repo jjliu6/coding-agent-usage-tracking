@@ -14,12 +14,14 @@ function num(s) {
 }
 
 // 有些页面（比如 Grok）把内容放进 Shadow DOM，普通 innerText 读不到。
-// 这个函数会连 Shadow DOM 里的文字一起收集。
+// 这个函数会连 Shadow DOM 里的文字一起收集。脚本/样式里的 "%" 不要算进去。
 function deepText(root) {
   let out = '';
+  const SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1 };
   const walk = (node) => {
     if (!node) return;
     if (node.nodeType === 3) { out += node.nodeValue + '\n'; return; }
+    if (node.nodeType === 1 && SKIP[node.nodeName]) return;
     if (node.shadowRoot) node.shadowRoot.childNodes.forEach(walk);
     if (node.childNodes) node.childNodes.forEach(walk);
   };
@@ -52,18 +54,11 @@ function makeAgent() {
   }
 
   if (h.includes('grok.com')) {
-    if (!/SuperGrok/i.test(T)) return null;         // 确认在 usage 视图
-    const wu = pct(/(\d+)\s*%\s*used/i);            // 整页只有"15% used"这一处带 used
-    if (wu == null) return null;
-    const reset = g(/Resets\s+([A-Z][a-z]+\s+\d{1,2},?\s*\d{4}[^\n]*?[AP]M)/i);
-    const bd = [];
-    for (const nm of ['App Builder', 'Automations', 'Chat', 'Imagine']) {
-      const p = pct(new RegExp(nm + '\\s*(\\d+)\\s*%', 'i'));
-      if (p != null) bd.push({ name: nm, percent: p });
-    }
+    const parsed = parseGrokUsage(T);
+    if (!parsed) return null;
     return { id: 'grok-build', name: 'Grok Build', color: '#B78CF0',
-      limits: [{ label: 'Weekly (SuperGrok)', percent_left: 100 - wu, resets_text: reset }],
-      breakdown: bd };
+      limits: [{ label: 'Weekly (SuperGrok)', percent_left: 100 - parsed.used, resets_text: parsed.reset }],
+      breakdown: parsed.breakdown };
   }
 
   if (h.includes('cursor.com')) {
@@ -124,12 +119,29 @@ function closeIfAuto() {
 
 // 页面/弹窗可能加载很慢（Grok、Cursor 尤其）。改成"盯着页面，数字一出现就抓"，
 // 最多等 60 秒，兼顾慢加载和后台标签页被浏览器降速的情况。
+// Grok 的大数字会从 0 往上滚，第一次匹配到的 "N% used" 往往是动画中间值，
+// 所以同一读数要稳住一小会儿才存。
 let done = false, iv = null, obs = null;
+let grokHold = { sig: '', t: 0 };
+function grokStable(a) {
+  const pct = a.limits && a.limits[0] ? a.limits[0].percent_left : '';
+  const sig = pct + '|' + (a.breakdown || []).map((x) => x.percent).join(',');
+  const now = Date.now();
+  if (grokHold.sig !== sig) {
+    grokHold = { sig, t: now };
+    return false;
+  }
+  return now - grokHold.t >= 1200;
+}
 function finish() { if (obs) obs.disconnect(); if (iv) clearInterval(iv); }
 function tryOnce() {
   if (done) return;
   const a = makeAgent();
-  if (a) { done = true; finish(); save(a, closeIfAuto); }
+  if (!a) return;
+  if (a.id === 'grok-build' && !grokStable(a)) return;
+  done = true;
+  finish();
+  save(a, closeIfAuto);
 }
 tryOnce();
 if (!done) {
