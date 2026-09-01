@@ -66,17 +66,18 @@ helpers for validating and packaging it (installed with `npm install`).
 
 ### Releasing
 
-Bump `version` in `manifest.json` and `package.json`, then push a matching tag:
-
-```sh
-git tag v1.2.0 && git push origin v1.2.0
-```
-
-The Release workflow (`.github/workflows/release.yml`) validates, tests, and builds
-the zip with `npm run build`, then publishes it as a GitHub Release with a
+Releases are automatic — just merge to `main`. The Release workflow
+(`.github/workflows/release.yml`) runs on every push to `main` that touches the
+extension (docs-only changes are skipped): it validates, tests, and builds the
+zip with `npm run build`, then publishes it as a GitHub Release with a
 stable-named asset `coding-agents-usage.zip` — which is what the Download button
-at the top of this README points to. You can also run the workflow manually from
-the Actions tab; that tags the current commit with the manifest version.
+at the top of this README points to.
+
+Versioning is automatic too: if `manifest.json`'s current version is already
+released, the workflow bumps the patch version and commits the bump back to
+`main`. For a minor/major release, bump `version` in `manifest.json` and
+`package.json` in your PR — that exact version is released when it lands. The
+workflow can also be run manually from the Actions tab.
 
 ## Disclaimer
 
