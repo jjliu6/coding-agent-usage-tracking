@@ -9,10 +9,14 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 
 ## Download
 
-[![Download the extension (.zip)](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Chrome%20extension%20(.zip)-1a73e8?style=for-the-badge)](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip)
+[![Download the extension (.zip)](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Chrome%20extension%20(.zip)-1a73e8?style=for-the-badge)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)
 
-No GitHub account, no git, no build step — [download the zip](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip),
+No GitHub account, no git, no build step — [download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip),
 unzip it, and load the folder in Chrome. See [Install](#install) below.
+
+<sub>Want the newest unreleased code instead? Grab the
+[source zip of `main`](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip) —
+it installs the same way, just with a few extra development files in the folder.</sub>
 
 ## What it does
 
@@ -25,10 +29,10 @@ unzip it, and load the folder in Chrome. See [Install](#install) below.
 
 ## Install
 
-1. **[Download the extension as a .zip](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip)**
+1. **[Download the extension as a .zip](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)**
    (or clone this repository, if you prefer git).
 2. **Unzip** the file (double-click on macOS, right-click → **Extract All…** on Windows).
-   You'll get a folder named `coding-agent-usage-tracking-main` — keep it somewhere permanent
+   You'll get a folder with `manifest.json` inside — keep it somewhere permanent
    (not the Downloads folder you might clean up later); Chrome loads the extension from this
    folder every time it starts.
 3. Open `chrome://extensions` in Chrome.
@@ -59,6 +63,20 @@ helpers for validating and packaging it (installed with `npm install`).
 - `npm run validate` — check the manifest is valid MV3 and every referenced script parses.
 - `npm run build` — package the extension into `dist/coding_agents_usage-<version>.zip`.
 - `npm start` — launch Chrome with the extension loaded for interactive testing (uses `web-ext run -t chromium`).
+
+### Releasing
+
+Bump `version` in `manifest.json` and `package.json`, then push a matching tag:
+
+```sh
+git tag v1.2.0 && git push origin v1.2.0
+```
+
+The Release workflow (`.github/workflows/release.yml`) validates, tests, and builds
+the zip with `npm run build`, then publishes it as a GitHub Release with a
+stable-named asset `coding-agents-usage.zip` — which is what the Download button
+at the top of this README points to. You can also run the workflow manually from
+the Actions tab; that tags the current commit with the manifest version.
 
 ## Disclaimer
 
