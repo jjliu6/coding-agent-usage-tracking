@@ -59,6 +59,8 @@ function el(extra) {
 const els = {
   refresh: el(),
   lang: el(),
+  gear: el(),
+  settings: el({ hidden: true }),
   'brand-name': el(),
   legend: el(),
   grid: el(),
@@ -113,6 +115,7 @@ const popupCtx = {
 };
 
 const ctx = vm.createContext(popupCtx);
+vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), ctx, { filename: 'agents.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), ctx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), ctx, { filename: 'popup.js' });
 
@@ -151,6 +154,72 @@ if (problems.length) {
 }
 console.log('ok  Default UI is English (ignores Chrome UI language zh-CN)');
 console.log('ok  Grok card shows 67% remaining with Chat/Build/Auto/Img slices');
+
+// --- Tracked-agents settings ---
+const setProblems = [];
+if (!els.settings.innerHTML.includes('Claude Code')) setProblems.push('settings should list Claude Code');
+if (!els.settings.innerHTML.includes('data-agent="cursor"')) setProblems.push('settings should have a cursor checkbox');
+if ((els.settings.innerHTML.match(/ checked/g) || []).length !== 4) {
+  setProblems.push('all four agents should default to checked');
+}
+store.enabledAgents = { codex: false };
+ctx.render();
+if (els.grid.innerHTML.includes('Codex')) setProblems.push('disabled Codex should not render a card');
+if (!els.grid.innerHTML.includes('Cursor')) setProblems.push('enabled Cursor should still render');
+if (els.settings.innerHTML.includes('data-agent="codex" checked')) {
+  setProblems.push('disabled Codex checkbox should be unchecked');
+}
+store.enabledAgents = {};
+ctx.render();
+if (setProblems.length) {
+  console.error(els.settings.innerHTML);
+  console.error(setProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Tracked-agents settings: default all on, unchecked agent disappears');
+
+// --- Failure state on cards ---
+const failProblems = [];
+const failHtml = ctx.card('grok-build', grok, [], true);
+if (!failHtml.includes("Last refresh couldn't read this page")) failProblems.push('failed card should warn about the failed refresh');
+if (!failHtml.includes('data-open="grok-build"')) failProblems.push('failed card should link to the usage page');
+if (ctx.card('grok-build', grok, [], false).includes('class="fail"')) failProblems.push('ok card must not show the failure line');
+store.refresh = { running: false, started: Date.now(), finished: Date.now(), results: { cursor: 'fail' } };
+ctx.render();
+if (!els.grid.innerHTML.includes('class="fail"')) failProblems.push('render should show the failure line for a failed agent');
+store.refresh = {};
+ctx.render();
+if (failProblems.length) {
+  console.error(failHtml);
+  console.error(failProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Failed refresh is visible on the card with an "open page" link');
+
+// --- 7-day sparkline ---
+const sparkProblems = [];
+const nowTs = Date.now();
+const sparkHist = [
+  { id: 'grok-build', t: nowTs - 3 * 86400000, pct: 90 },
+  { id: 'grok-build', t: nowTs - 2 * 86400000, pct: 70 },
+  { id: 'grok-build', t: nowTs - 1 * 86400000, pct: 55 },
+];
+if (!ctx.sparkline(sparkHist, '#B78CF0').includes('<polyline')) sparkProblems.push('sparkline should draw a polyline from history');
+if (ctx.sparkline([sparkHist[0]], '#B78CF0') !== '') sparkProblems.push('sparkline needs at least 2 points');
+if (ctx.sparkline([{ id: 'grok-build', t: nowTs - 9 * 86400000, pct: 90 }, sparkHist[0]], '#B78CF0') !== '') {
+  sparkProblems.push('points older than 7 days should be ignored');
+}
+if (!ctx.card('grok-build', grok, sparkHist, false).includes('class="spark"')) {
+  sparkProblems.push('card with history should include the sparkline');
+}
+if (ctx.card('grok-build', grok, [], false).includes('class="spark"')) {
+  sparkProblems.push('card without history should not include a sparkline');
+}
+if (sparkProblems.length) {
+  console.error(sparkProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Card shows a 7-day sparkline once there is enough history');
 
 let langDone = false;
 ctx.setLang('zh', () => { langDone = true; });
@@ -247,6 +316,7 @@ const reloadCtxObj = {
   setTimeout: noop,
 };
 const reloadCtx = vm.createContext(reloadCtxObj);
+vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), reloadCtx, { filename: 'agents.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), reloadCtx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), reloadCtx, { filename: 'popup.js' });
 if (reloadCtx.currentLang() !== 'zh') {
