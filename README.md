@@ -7,6 +7,13 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 
 <sub>Example popup with sample data.</sub>
 
+## Download
+
+[![Download the extension (.zip)](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Chrome%20extension%20(.zip)-1a73e8?style=for-the-badge)](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip)
+
+No GitHub account, no git, no build step — [download the zip](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip),
+unzip it, and load the folder in Chrome. See [Install](#install) below.
+
 ## What it does
 
 - One click shows the remaining weekly / short-term quota for all four agents, and when each one resets.
@@ -16,14 +23,23 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 - No API and no account linking — it reads the numbers straight off each tool's own usage page that you're already logged into.
 - Everything stays local in your browser (`chrome.storage.local`). Nothing is sent to any server.
 
-## Install (load unpacked)
+## Install
 
-1. Open `chrome://extensions` in Chrome.
-2. Turn on **Developer mode** (top-right).
-3. Click **Load unpacked** and select this repository's folder.
-4. Click the toolbar icon. The dashboard opens in the **side panel** so it stays visible while Refresh scrapes.
-5. Click **Refresh** (or open a product's usage page in a normal tab) to populate the data.
-6. The dashboard defaults to **English**. Click **中文** / **EN** in the header to switch; the choice is stored locally (`uiLang`) and does not follow Chrome's UI language.
+1. **[Download the extension as a .zip](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip)**
+   (or clone this repository, if you prefer git).
+2. **Unzip** the file (double-click on macOS, right-click → **Extract All…** on Windows).
+   You'll get a folder named `coding-agent-usage-tracking-main` — keep it somewhere permanent
+   (not the Downloads folder you might clean up later); Chrome loads the extension from this
+   folder every time it starts.
+3. Open `chrome://extensions` in Chrome.
+4. Turn on **Developer mode** (toggle in the top-right corner).
+5. Click **Load unpacked** and select the unzipped folder (the one that contains `manifest.json`).
+6. Click the toolbar icon. The dashboard opens in the **side panel** so it stays visible while Refresh scrapes.
+7. Click **Refresh** (or open a product's usage page in a normal tab) to populate the data.
+8. The dashboard defaults to **English**. Click **中文** / **EN** in the header to switch; the choice is stored locally (`uiLang`) and does not follow Chrome's UI language.
+
+To update later: download the zip again, replace the folder's contents, then click the ↻ reload
+button on the extension's card in `chrome://extensions`.
 
 ## Files
 
