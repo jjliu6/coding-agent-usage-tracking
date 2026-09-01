@@ -3,6 +3,11 @@ const ORDER = AGENTS.map((a) => a.id);
 const META = {};
 AGENTS.forEach((a) => { META[a.id] = a; });
 
+// 抓取值来自目标网页的文本，进 innerHTML 前必须转义，防止页面内容注入面板
+const esc = (s) => ('' + s).replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
 const fmtTok = (n) => {
   if (n == null) return '';
   if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
@@ -151,21 +156,22 @@ const LIMIT_KEYS = {
 
 function limLabel(s) {
   const key = LIMIT_KEYS[s];
-  return key ? t(key) : s;
+  return key ? t(key) : esc(s);
 }
 
 function bdShort(name) {
   const key = BD_SHORT_KEY[name];
-  return key ? t(key) : name;
+  return key ? t(key) : esc(name);
 }
 
 function breakdownBar(bd) {
   if (!bd || !bd.length) return '';
   const segs = bd.map((x) => {
     const c = BD_COLOR[x.name] || '#8a92a0';
-    return `<i title="${x.name} ${x.percent}%" style="width:${x.percent}%;background:${c}"></i>`;
+    const p = Math.max(0, Math.min(100, +x.percent || 0));
+    return `<i title="${esc(x.name)} ${p}%" style="width:${p}%;background:${c}"></i>`;
   }).join('');
-  const legend = bd.map((x) => `${bdShort(x.name)} ${x.percent}%`).join(' · ');
+  const legend = bd.map((x) => `${bdShort(x.name)} ${Math.max(0, Math.min(100, +x.percent || 0))}%`).join(' · ');
   return `<div class="barwrap"><div class="t"><span>${legend}</span></div>
     <div class="bar stacked">${segs}</div></div>`;
 }
@@ -222,12 +228,13 @@ function card(id, a, hist, fail) {
   const pct = p0 ? p0.percent_left : null;
   const now = Date.now();
   const resetDate = p0 ? parseReset(p0.resets_text, now) : null;
-  const resetLabel = untilText(resetDate, now) || (p0 && p0.resets_text) || '';
+  const resetLabel = untilText(resetDate, now) || (p0 && p0.resets_text && esc(p0.resets_text)) || '';
   const est = pct != null ? verdict(hist, resetDate, now) : null;
+  const plan = a.plan ? esc(a.plan) : null;
   const foot = [];
   if (a.tokens && a.tokens.total != null) foot.push(t('tokens', { n: fmtTok(a.tokens.total) }));
-  if (a.credits && a.credits !== '0' && a.credits !== '$0.00') foot.push(t('credits', { n: a.credits }));
-  else if (a.plan) foot.push(a.plan);
+  if (a.credits && a.credits !== '0' && a.credits !== '$0.00') foot.push(t('credits', { n: esc(a.credits) }));
+  else if (plan) foot.push(plan);
 
   const center = pct != null
     ? `<b style="color:${health(pct)}">${pct}%</b><span>${t('left')}</span>`
@@ -245,8 +252,8 @@ function card(id, a, hist, fail) {
 
   return `<div class="card">
     <div class="chead">
-      <div class="name">${logo(id, meta.color)}${a.name || meta.name}</div>
-      ${a.plan ? `<span class="plan">${a.plan}</span>` : ''}
+      <div class="name">${logo(id, meta.color)}${a.name ? esc(a.name) : meta.name}</div>
+      ${plan ? `<span class="plan">${plan}</span>` : ''}
     </div>
     <div class="mid">
       <div class="ring">${ring(pct == null ? 0 : pct, meta.color)}<div class="c">${center}</div></div>
@@ -270,6 +277,8 @@ function renderSettings(en) {
   ).join('');
 }
 
+let staleTimer = null;
+
 function render() {
   chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents'], (res) => {
     const map = res.agents || {};
@@ -279,8 +288,17 @@ function render() {
     const byId = {};
     hist.forEach((e) => { (byId[e.id] = byId[e.id] || []).push(e); });
     const rf = res.refresh || {};
+    // 兜底：MV3 service worker 可能中途被回收，refresh.running 会永远留在 true。
+    // 一轮刷新最长约 100 秒，started 超过 2.5 分钟仍 running 就当它已经死了，别把按钮锁死。
+    const STALE_MS = 150000;
+    const running = !!(rf.running && rf.started && Date.now() - rf.started < STALE_MS);
+    if (running) {
+      // 面板开着不动也要能解锁：到过期时刻再重绘一次
+      clearTimeout(staleTimer);
+      staleTimer = setTimeout(render, STALE_MS - (Date.now() - rf.started) + 1000);
+    }
     // 上一轮 Refresh 没抓到、且之后也没有更新的数据 → 卡片上提示失败
-    const failed = (id) => !rf.running && rf.results && rf.results[id] === 'fail' &&
+    const failed = (id) => !running && rf.results && rf.results[id] === 'fail' &&
       !(map[id] && rf.started && map[id].scraped_at >= rf.started);
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
@@ -293,7 +311,7 @@ function render() {
     document.getElementById('upd').textContent = latest
       ? t('updated', { time: new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })
       : '';
-    if (rf.running) {
+    if (running) {
       if (btn) { btn.textContent = t('fetching'); btn.disabled = true; }
       document.getElementById('hint').textContent = t('fetchingHint');
     } else {

@@ -23,7 +23,42 @@ function getLocal(keys) {
   return new Promise((resolve) => chrome.storage.local.get(keys, resolve));
 }
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
+// content.js 抓到的数据都经这里写入。多个抓取标签页可能同时完成，
+// 各自 get→改→set 会丢更新，所以全部排进一个队列串行执行。
+let writeQueue = Promise.resolve();
+
+function saveAgent(a) {
+  const run = () => new Promise((resolve) => {
+    chrome.storage.local.get(['agents', 'history'], (res) => {
+      const map = res.agents || {};
+      // Cursor 分两页，合并保留各自字段
+      map[a.id] = (a.id === 'cursor' && map.cursor) ? Object.assign({}, map.cursor, a) : a;
+
+      // 记历史：只存主额度的left%，用来算消耗速度 / 预计用完时间
+      let hist = res.history || [];
+      const merged = map[a.id];
+      const pct = merged.limits && merged.limits[0] ? merged.limits[0].percent_left : null;
+      if (pct != null) {
+        let last = null;
+        for (let i = hist.length - 1; i >= 0; i--) { if (hist[i].id === a.id) { last = hist[i]; break; } }
+        // 同一 agent：距上次超过 5 分钟、或数值变了才记一笔，避免灌水
+        if (!last || a.scraped_at - last.t > 5 * 60000 || Math.abs(last.pct - pct) >= 1) {
+          hist.push({ id: a.id, t: a.scraped_at, pct });
+          if (hist.length > 1200) hist = hist.slice(hist.length - 1200);
+        }
+      }
+      chrome.storage.local.set({ agents: map, history: hist }, resolve);
+    });
+  });
+  writeQueue = writeQueue.then(run, run);
+  return writeQueue;
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === 'agentData' && msg.agent && typeof msg.agent.id === 'string') {
+    saveAgent(msg.agent).then(() => sendResponse({ ok: true }));
+    return true; // 等写完再 sendResponse
+  }
   if (msg && msg.type === 'closeMe' && sender.tab && sender.tab.id != null) {
     chrome.tabs.remove(sender.tab.id, () => void chrome.runtime.lastError);
   }
