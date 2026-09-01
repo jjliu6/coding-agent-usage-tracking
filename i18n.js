@@ -35,6 +35,11 @@ const I18N = {
     burnLine: 'Burning ~{n}%/day · {eta}',
     credits: 'credits {n}',
     tokens: '{n} tokens',
+    tracked: 'Tracked:',
+    gearTitle: 'Choose tracked agents',
+    openPage: 'Open page',
+    fetchFailed: "Last refresh couldn't read this page — you may need to sign in.",
+    spark7d: 'Remaining % — past 7 days',
     weeklyAll: 'Weekly (All models)',
     session5h: 'Session (5h)',
     weekly: 'Weekly',
@@ -78,6 +83,11 @@ const I18N = {
     burnLine: '消耗 ~{n}%/天 · {eta}',
     credits: '积分 {n}',
     tokens: '{n} tokens',
+    tracked: '跟踪：',
+    gearTitle: '选择要跟踪的产品',
+    openPage: '打开页面',
+    fetchFailed: '上次刷新没抓到数据，可能需要登录。',
+    spark7d: '近 7 天剩余额度走势',
     weeklyAll: 'Weekly 额度 (All models)',
     session5h: '当前会话 (5h)',
     weekly: 'Weekly 额度',
@@ -119,6 +129,8 @@ function applyI18n() {
     langBtn.textContent = currentLang() === 'zh' ? 'EN' : '中文';
     langBtn.title = currentLang() === 'zh' ? 'Switch to English' : '切换到中文';
   }
+  const gearBtn = document.getElementById('gear');
+  if (gearBtn) gearBtn.title = t('gearTitle');
 }
 
 function applyStoredLang(lang) {

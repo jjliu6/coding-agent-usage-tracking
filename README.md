@@ -10,7 +10,9 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 ## What it does
 
 - One click shows the remaining weekly / short-term quota for all four agents, and when each one resets.
-- Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset.
+- Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
+- The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
+- If a refresh can't read a page (usually because you're signed out), the card says so and links straight to that product's usage page.
 - No API and no account linking — it reads the numbers straight off each tool's own usage page that you're already logged into.
 - Everything stays local in your browser (`chrome.storage.local`). Nothing is sent to any server.
 
@@ -26,6 +28,7 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 ## Files
 
 - `manifest.json` — extension manifest (Manifest V3)
+- `agents.js` — shared registry of the four agents (names, colors, usage-page URLs)
 - `background.js` — service worker that coordinates the "Refresh" flow
 - `content.js` — content script that reads usage numbers from each product page
 - `popup.html` / `popup.js` / `i18n.js` — the side-panel dashboard (English / 中文)

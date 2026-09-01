@@ -1,17 +1,7 @@
-const ORDER = ['claude-code', 'codex', 'grok-build', 'cursor'];
-const META = {
-  'claude-code': { name: 'Claude Code', color: '#D97757' },
-  'codex': { name: 'Codex', color: '#5CD6B3' },
-  'grok-build': { name: 'Grok Build', color: '#B78CF0' },
-  'cursor': { name: 'Cursor', color: '#6E9BF5' },
-};
-const REFRESH_URLS = [
-  'https://claude.ai/new?cawrefresh=1#settings/usage',
-  'https://chatgpt.com/codex/cloud/settings/analytics?cawrefresh=1#usage',
-  'https://grok.com/?_s=usage&cawrefresh=1',
-  'https://cursor.com/dashboard/usage?cawrefresh=1',
-  'https://cursor.com/dashboard/spending?cawrefresh=1',
-];
+// 产品列表（名字/颜色/额度页 URL）统一放在 agents.js
+const ORDER = AGENTS.map((a) => a.id);
+const META = {};
+AGENTS.forEach((a) => { META[a.id] = a; });
 
 const fmtTok = (n) => {
   if (n == null) return '';
@@ -180,6 +170,32 @@ function breakdownBar(bd) {
     <div class="bar stacked">${segs}</div></div>`;
 }
 
+// 近 7 天剩余额度的迷你走势图（额度重置会画出"锯齿"，一眼看出使用节奏）
+function sparkline(entries, color) {
+  const now = Date.now();
+  const from = now - 7 * 86400000;
+  const pts = (entries || [])
+    .filter((e) => e && e.t >= from && e.pct != null)
+    .slice()
+    .sort((a, b) => a.t - b.t);
+  if (pts.length < 2) return '';
+  const W = 100, H = 26, P = 2;
+  const t0 = pts[0].t;
+  const span = Math.max(pts[pts.length - 1].t - t0, 1);
+  const xy = pts.map((e) => [
+    ((e.t - t0) / span * W).toFixed(1),
+    (P + (100 - e.pct) / 100 * (H - 2 * P)).toFixed(1),
+  ]);
+  const line = xy.map((p) => p.join(',')).join(' ');
+  const area = `0,${H} ${line} ${W},${H}`;
+  return `<div class="spark" title="${t('spark7d')}">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polygon points="${area}" fill="${color}" fill-opacity="0.10"/>
+      <polyline points="${line}" fill="none" stroke="${color}" stroke-width="2"
+        vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg></div>`;
+}
+
 function ring(pct, color) {
   const R = 28, C = 2 * Math.PI * R, off = C * (1 - (pct || 0) / 100);
   return `<svg width="66" height="66" viewBox="0 0 66 66">
@@ -189,12 +205,17 @@ function ring(pct, color) {
   </svg>`;
 }
 
-function card(id, a, hist) {
+function openLink(id) {
+  return `<a href="#" data-open="${id}">${t('openPage')} ↗</a>`;
+}
+
+function card(id, a, hist, fail) {
   const meta = META[id];
   if (!a) {
     return `<div class="card">
       <div class="chead"><div class="name">${logo(id, meta.color)}${meta.name}</div></div>
-      <div class="empty">${t('empty')}</div>
+      <div class="empty">${t('empty')} ${openLink(id)}</div>
+      ${fail ? `<div class="fail">⚠ ${t('fetchFailed')}</div>` : ''}
     </div>`;
   }
   const L = a.limits || [], p0 = L[0], p1 = L[1];
@@ -218,6 +239,9 @@ function card(id, a, hist) {
 
   let burn = '';
   if (est) burn = `<div style="font-size:10.5px;margin-top:9px;color:${est.color}">🔥 ${est.text}</div>`;
+  const failLine = fail
+    ? `<div class="fail">⚠ ${t('fetchFailed')} ${openLink(id)}</div>`
+    : '';
 
   return `<div class="card">
     <div class="chead">
@@ -232,24 +256,40 @@ function card(id, a, hist) {
       </div>
     </div>
     ${burn}
+    ${sparkline(hist, meta.color)}
+    ${failLine}
     <div class="foot"><span>${foot.filter(Boolean).join(' · ')}</span><span>${ago(a.scraped_at)}</span></div>
   </div>`;
 }
 
+function renderSettings(en) {
+  const box = document.getElementById('settings');
+  if (!box) return;
+  box.innerHTML = `<span class="st">${t('tracked')}</span>` + AGENTS.map((a) =>
+    `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
+  ).join('');
+}
+
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
+    const en = res.enabledAgents || {};
+    const shown = ORDER.filter((id) => en[id] !== false);
     const byId = {};
     hist.forEach((e) => { (byId[e.id] = byId[e.id] || []).push(e); });
-    document.getElementById('grid').innerHTML =
-      ORDER.map((id) => card(id, map[id], byId[id])).join('');
-    const any = ORDER.some((id) => map[id]);
     const rf = res.refresh || {};
+    // 上一轮 Refresh 没抓到、且之后也没有更新的数据 → 卡片上提示失败
+    const failed = (id) => !rf.running && rf.results && rf.results[id] === 'fail' &&
+      !(map[id] && rf.started && map[id].scraped_at >= rf.started);
+    document.getElementById('grid').innerHTML =
+      shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
+    renderSettings(en);
+    const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
     let latest = 0;
-    ORDER.forEach((id) => { if (map[id] && map[id].scraped_at > latest) latest = map[id].scraped_at; });
+    shown.forEach((id) => { if (map[id] && map[id].scraped_at > latest) latest = map[id].scraped_at; });
     document.getElementById('upd').textContent = latest
       ? t('updated', { time: new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })
       : '';
@@ -277,6 +317,38 @@ function startRefresh() {
 }
 
 document.getElementById('refresh').addEventListener('click', startRefresh);
+const gearBtn = document.getElementById('gear');
+if (gearBtn) {
+  gearBtn.addEventListener('click', () => {
+    const box = document.getElementById('settings');
+    if (box) box.hidden = !box.hidden;
+  });
+}
+const settingsBox = document.getElementById('settings');
+if (settingsBox) {
+  settingsBox.addEventListener('change', (e) => {
+    const id = e.target && e.target.dataset && e.target.dataset.agent;
+    if (!id) return;
+    const checked = !!e.target.checked;
+    chrome.storage.local.get(['enabledAgents'], (res) => {
+      const en = res.enabledAgents || {};
+      en[id] = checked;
+      chrome.storage.local.set({ enabledAgents: en }); // onChanged 会触发重绘
+    });
+  });
+}
+const gridEl = document.getElementById('grid');
+if (gridEl && gridEl.addEventListener) {
+  // 卡片里的 "打开页面 ↗"：在普通标签页打开该产品的额度页（顺便也就完成了一次抓取）
+  gridEl.addEventListener('click', (e) => {
+    let n = e.target;
+    while (n && n !== e.currentTarget && !(n.dataset && n.dataset.open)) n = n.parentNode;
+    const id = n && n.dataset && n.dataset.open;
+    if (!id || !META[id]) return;
+    e.preventDefault();
+    chrome.tabs.create({ url: META[id].page });
+  });
+}
 const langBtn = document.getElementById('lang');
 if (langBtn) {
   langBtn.addEventListener('click', () => {
