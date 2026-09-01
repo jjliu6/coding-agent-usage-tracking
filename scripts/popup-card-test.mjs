@@ -112,6 +112,7 @@ const popupCtx = {
   },
   location: { href: 'chrome-extension://id/popup.html' },
   setTimeout: noop,
+  clearTimeout: noop,
 };
 
 const ctx = vm.createContext(popupCtx);
@@ -220,6 +221,49 @@ if (sparkProblems.length) {
   process.exit(1);
 }
 console.log('ok  Card shows a 7-day sparkline once there is enough history');
+
+// --- Scraped text is escaped before hitting innerHTML ---
+const escProblems = [];
+const evil = {
+  id: 'cursor',
+  name: 'Cursor<img src=x onerror=alert(1)>',
+  scraped_at: Date.now(),
+  plan: '<b>Pro</b> $20/mo',
+  credits: '<script>steal()</script>',
+  limits: [{ label: '"><svg onload=alert(2)>', percent_left: 50, resets_text: '<img src=x onerror=alert(3)>' }],
+};
+const evilHtml = ctx.card('cursor', evil, [], false);
+if (evilHtml.includes('<img') || evilHtml.includes('<script>') || evilHtml.includes('<svg onload') || evilHtml.includes('<b>Pro</b>')) {
+  escProblems.push('scraped markup must not survive into card HTML');
+}
+if (!evilHtml.includes('&lt;img')) escProblems.push('scraped markup should be HTML-escaped, not dropped');
+const evilBd = ctx.breakdownBar([{ name: '"><i onmouseover=x>', percent: 40 }]);
+if (evilBd.includes('"><i onmouseover')) escProblems.push('breakdown names must be escaped in title/legend');
+if (escProblems.length) {
+  console.error(evilHtml);
+  console.error(evilBd);
+  console.error(escProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Scraped page text is escaped before rendering');
+
+// --- Stale refresh.running must not lock the Refresh button forever ---
+const staleProblems = [];
+store.refresh = { running: true, started: Date.now() - 10 * 60000 };
+ctx.render();
+if (els.refresh.disabled) staleProblems.push('stale running (10 min old) must not disable the button');
+if (els.refresh.textContent !== 'Refresh') staleProblems.push(`stale running should show Refresh, got ${JSON.stringify(els.refresh.textContent)}`);
+store.refresh = { running: true, started: Date.now() };
+ctx.render();
+if (!els.refresh.disabled) staleProblems.push('a fresh running refresh should disable the button');
+store.refresh = {};
+els.refresh.disabled = false;
+ctx.render();
+if (staleProblems.length) {
+  console.error(staleProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Stuck refresh.running older than 2.5 min unlocks the Refresh button');
 
 let langDone = false;
 ctx.setLang('zh', () => { langDone = true; });
