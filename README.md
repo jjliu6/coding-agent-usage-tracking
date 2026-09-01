@@ -22,6 +22,9 @@ it installs the same way, just with a few extra development files in the folder.
 
 - One click shows the remaining weekly / short-term quota for all four agents, and when each one resets.
 - Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
+- The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
+- When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
+- An hourly **quiet auto-check** re-scrapes your tracked agents in background tabs without stealing focus (togglable). Pages that won't render in a background tab (can happen with Cursor/Grok) just keep their last data — click Refresh for a guaranteed update.
 - The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
 - If a refresh can't read a page (usually because you're signed out), the card says so and links straight to that product's usage page.
 - No API and no account linking — it reads the numbers straight off each tool's own usage page that you're already logged into.
