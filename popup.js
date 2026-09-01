@@ -269,18 +269,26 @@ function card(id, a, hist, fail) {
   </div>`;
 }
 
-function renderSettings(en) {
+function renderSettings(en, prefs) {
   const box = document.getElementById('settings');
   if (!box) return;
-  box.innerHTML = `<span class="st">${t('tracked')}</span>` + AGENTS.map((a) =>
+  const agents = AGENTS.map((a) =>
     `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
   ).join('');
+  // 两个功能开关（默认都开）：每小时静默自动检查、低额度通知
+  const toggles = [
+    ['autoRefresh', t('autoCheck'), t('autoCheckTip')],
+    ['notifyLow', t('notifyLow'), t('notifyLowTip')],
+  ].map(([k, label, tip]) =>
+    `<label title="${tip}"><input type="checkbox" data-pref="${k}"${prefs[k] !== false ? ' checked' : ''}>${label}</label>`
+  ).join('');
+  box.innerHTML = `<span class="st">${t('tracked')}</span>${agents}<span class="brk"></span>${toggles}`;
 }
 
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -302,7 +310,7 @@ function render() {
       !(map[id] && rf.started && map[id].scraped_at >= rf.started);
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
-    renderSettings(en);
+    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow });
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
@@ -345,14 +353,22 @@ if (gearBtn) {
 const settingsBox = document.getElementById('settings');
 if (settingsBox) {
   settingsBox.addEventListener('change', (e) => {
-    const id = e.target && e.target.dataset && e.target.dataset.agent;
-    if (!id) return;
-    const checked = !!e.target.checked;
-    chrome.storage.local.get(['enabledAgents'], (res) => {
-      const en = res.enabledAgents || {};
-      en[id] = checked;
-      chrome.storage.local.set({ enabledAgents: en }); // onChanged 会触发重绘
-    });
+    const el = e.target;
+    if (!el || !el.dataset) return;
+    const checked = !!el.checked;
+    const id = el.dataset.agent;
+    if (id) {
+      chrome.storage.local.get(['enabledAgents'], (res) => {
+        const en = res.enabledAgents || {};
+        en[id] = checked;
+        chrome.storage.local.set({ enabledAgents: en }); // onChanged 会触发重绘
+      });
+      return;
+    }
+    const pref = el.dataset.pref;
+    if (pref === 'autoRefresh' || pref === 'notifyLow') {
+      chrome.storage.local.set({ [pref]: checked });
+    }
   });
 }
 const gridEl = document.getElementById('grid');

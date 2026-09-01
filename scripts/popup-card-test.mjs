@@ -160,9 +160,22 @@ console.log('ok  Grok card shows 67% remaining with Chat/Build/Auto/Img slices')
 const setProblems = [];
 if (!els.settings.innerHTML.includes('Claude Code')) setProblems.push('settings should list Claude Code');
 if (!els.settings.innerHTML.includes('data-agent="cursor"')) setProblems.push('settings should have a cursor checkbox');
-if ((els.settings.innerHTML.match(/ checked/g) || []).length !== 4) {
+if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !== 4) {
   setProblems.push('all four agents should default to checked');
 }
+if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 2) {
+  setProblems.push('autoRefresh and notifyLow toggles should default to checked');
+}
+store.autoRefresh = false;
+ctx.render();
+if (els.settings.innerHTML.includes('data-pref="autoRefresh" checked')) {
+  setProblems.push('autoRefresh=false should render unchecked');
+}
+if (!els.settings.innerHTML.includes('data-pref="notifyLow" checked')) {
+  setProblems.push('notifyLow should stay checked when only autoRefresh is off');
+}
+delete store.autoRefresh;
+ctx.render();
 store.enabledAgents = { codex: false };
 ctx.render();
 if (els.grid.innerHTML.includes('Codex')) setProblems.push('disabled Codex should not render a card');
