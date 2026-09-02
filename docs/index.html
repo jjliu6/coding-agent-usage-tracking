@@ -101,40 +101,22 @@
   .compat { margin-top: 18px; font-size: 13.5px; color: var(--fg-faint); }
   @media (max-width: 880px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; } .badge-note { position: static; margin: 0 0 12px; width: fit-content; } }
 
-  /* ---------- mock side panel (drawn with CSS/SVG so it always matches the current build) ---------- */
-  .panel-frame { position: relative; min-width: 0; }
-  .panel { background: var(--panel); color: var(--panel-fg); border-radius: 16px; padding: 14px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06) inset; font-size: 11.5px; max-width: 520px; margin: 0 auto; }
-  .panel-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 12px; }
-  .panel-head b { letter-spacing: .12em; font-size: 11px; }
-  .panel-head .spacer { margin-left: auto; color: var(--panel-muted); font-size: 10.5px; }
-  .panel-head .rb { background: #3a4150; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 10.5px; }
-  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  @media (max-width: 460px) { .cards { grid-template-columns: minmax(0, 1fr); } }
-  .card { background: var(--panel-card); border-radius: 10px; padding: 10px 11px; }
-  .card .name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; margin-bottom: 8px; }
-  .card .name i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .card .name .plan { margin-left: auto; color: var(--panel-muted); font-weight: 400; font-size: 10px; }
-  .card .row { display: flex; align-items: center; gap: 10px; }
-  .ring { position: relative; width: 54px; height: 54px; flex: none; }
-  .ring svg { width: 54px; height: 54px; transform: rotate(-90deg); }
-  .ring .pct { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
-  .ring .pct b { font-size: 13px; }
-  .ring .pct small { font-size: 8.5px; color: var(--panel-muted); }
-  .card .lines { flex: 1; min-width: 0; }
-  .card .l1 { display: flex; justify-content: space-between; gap: 6px; }
-  .card .l1 span:last-child { color: var(--panel-muted); white-space: nowrap; }
-  .card .l1 span:first-child { min-width: 0; }
-  .bar { height: 4px; border-radius: 4px; background: #3a4150; margin: 6px 0 3px; overflow: hidden; }
-  .bar i { display: block; height: 100%; border-radius: 4px; }
-  .card .burn { color: var(--panel-muted); margin-top: 8px; display: flex; gap: 6px; align-items: center; }
-  .card .burn.warn { color: var(--warn); }
-  .card .burn.bad { color: var(--bad); }
-  .spark { width: 100%; height: 22px; margin-top: 6px; display: block; }
-  .panel-foot { display: flex; justify-content: space-between; color: var(--panel-muted); font-size: 10.5px; padding: 12px 4px 0; }
-  .panel-foot .new { color: var(--ok); }
-  .badge-note { position: absolute; top: -30px; right: 10px; background: var(--bg-elev); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; }
+  /* ---------- real screenshots of the panel ---------- */
+  .shot-frame { position: relative; min-width: 0; padding-top: 34px; }
+  .shot { max-width: 380px; margin: 0 auto; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06) inset; background: #14161c; }
+  .shot img { display: block; width: 100%; height: auto; }
+  .badge-note { position: absolute; top: 0; right: 10px; background: var(--bg-elev); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; z-index: 1; }
   .badge-note .b { background: var(--bad); color: #fff; font-weight: 700; font-size: 10px; padding: 1px 5px; border-radius: 4px; }
   .sample { text-align: center; font-size: 12px; color: var(--fg-faint); margin-top: 14px; }
+
+  /* ---------- hair mascot section ---------- */
+  .mascot-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: start; margin-top: 36px; }
+  .mascot-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .mascot-shots figure { margin: 0; min-width: 0; }
+  .mascot-shots .shot { border-radius: 14px; max-width: none; }
+  .mascot-shots figcaption { font-size: 13px; color: var(--fg-muted); margin-top: 10px; text-align: center; }
+  @media (max-width: 900px) { .mascot-grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 460px) { .mascot-shots { grid-template-columns: minmax(0, 1fr); } }
 
   /* ---------- agent strip ---------- */
   .strip { padding: 34px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-elev); }
@@ -215,7 +197,7 @@
     <div>
       <span class="eyebrow" data-i18n="hero.eyebrow">Free · Open source · Chrome extension</span>
       <h1 data-i18n-html="hero.h1">Know how much AI coding quota you have <span class="hl">left</span> — at a glance.</h1>
-      <p class="lead" data-i18n="hero.lead">One side panel shows your remaining usage for Claude Code, Codex, Cursor, Grok Build, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account linking, no API keys, and nothing leaves your browser.</p>
+      <p class="lead" data-i18n="hero.lead">One side panel shows your remaining usage for Claude Code, Codex, Cursor, Grok Build, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account linking, no API keys, and nothing leaves your browser. And a little hair mascot that loses hair as you burn quota and makes you stand up now and then.</p>
 
       <div class="cta">
         <a class="btn btn-primary" id="download" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">
@@ -242,14 +224,10 @@
       <p class="compat" data-i18n="hero.compat">Works in Chrome and other Chromium browsers (Edge, Brave, Arc). The button always points to the newest build on GitHub — you never download an outdated version.</p>
     </div>
 
-    <div class="panel-frame">
+    <div class="shot-frame">
       <div class="badge-note"><span class="b">15%</span><span data-i18n="hero.badgeNote">Toolbar badge shows your lowest quota</span></div>
-      <div class="panel" aria-hidden="true">
-        <div class="panel-head"><span>✦</span><b>CODING AGENTS</b><span class="spacer">Updated 2m ago · number = remaining</span><span class="rb">Refresh</span></div>
-        <div class="cards" id="mock-cards"></div>
-        <div class="panel-foot"><span>Tracked: 6 agents</span><span id="mock-version">v1.2.2 · up to date</span></div>
-      </div>
-      <p class="sample" data-i18n="hero.sample">Illustration with sample data.</p>
+      <div class="shot"><img id="hero-shot" src="shot-panel-en.png" width="840" height="1520" alt="The side panel showing remaining quota for six coding agents, with the hair mascot floating over the cards" loading="eager"></div>
+      <p class="sample" data-i18n="hero.sample">The real panel, with sample data.</p>
     </div>
   </div>
 </section>
@@ -304,6 +282,36 @@
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
         <h3 data-i18n="feat.6h">Private by design</h3>
         <p data-i18n="feat.6p">No API keys, no account linking. It reads the numbers off pages you're already signed into and keeps everything in your browser's local storage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HAIR MASCOT ============ -->
+<section id="mascot">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="mascot.eyebrow">New in v1.3 · Take breaks too</span>
+    <h2 data-i18n="mascot.h2">A hair mascot that thins as you burn quota, and makes you stretch.</h2>
+    <p class="lead" data-i18n="mascot.lead">Quota isn't the only thing that runs out while you vibe-code. The panel now comes with a small companion that keeps an eye on you as well.</p>
+    <div class="mascot-grid">
+      <div class="mascot-shots">
+        <figure>
+          <div class="shot"><img id="mascot-shot-1" src="shot-panel-en.png" width="840" height="1520" alt="The panel with the hair mascot floating over the quota cards, showing 51% hair left" loading="lazy"></div>
+          <figcaption data-i18n="mascot.cap1">Hair follows your average remaining quota.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot"><img id="mascot-shot-2" src="shot-break-en.png" width="840" height="1520" alt="Break time: the quota cards are frosted over and the mascot offers three short activities with a Done button" loading="lazy"></div>
+          <figcaption data-i18n="mascot.cap2">Break time: cards frost over until you finish one activity.</figcaption>
+        </figure>
+      </div>
+      <div>
+        <ul class="checks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.1"><b>Hair = quota.</b> The mascot floats over the dashboard and loses hair as your average remaining quota burns down. Drag it anywhere, or let it wander.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.2"><b>Every 2 hours it asks you to move</b> (every hour if an agent burned more than 10% in that window). A frosted veil covers the cards and 2–3 random stretch or rest activities appear, drawn from a pool of 100.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.3"><b>Pick one, go do it, tap Done.</b> The veil lifts, the hair grows back, and the numbers are readable again.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.4"><b>Optional move reminder</b> (off by default): a desktop nudge when an agent burns more than 10% of its quota within 2 hours, at most once every 2 hours per agent. It's a nudge, not a lock — an extension can't stop your terminal.</span></li>
+        </ul>
+        <div class="note" data-i18n-html="mascot.note"><b>Not your thing?</b> Both the mascot and the move reminder are switches in ⚙. Turn them off and the panel is back to plain numbers.</div>
       </div>
     </div>
   </div>
@@ -417,6 +425,10 @@
         <p data-i18n="faq.5a">Open ⚙ in the panel and untick it. Unticked agents are skipped by Refresh and hidden from the dashboard and the badge.</p>
       </details>
       <details>
+        <summary data-i18n="faq.7q">Can I turn off the hair mascot?</summary>
+        <p data-i18n="faq.7a">Yes. Open ⚙ in the panel and untick "Hair mascot". The break-time veil goes with it. The move reminder is a separate switch and is off unless you turn it on.</p>
+      </details>
+      <details>
         <summary data-i18n="faq.6q">Can I get the very latest unreleased code?</summary>
         <p data-i18n-html="faq.6a">Yes — grab the <a href="https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip">source zip of the main branch</a>. It installs the same way, just with a few extra development files in the folder.</p>
       </details>
@@ -458,14 +470,26 @@ const I18N = {
     'nav.features': '功能', 'nav.install': '安装', 'nav.faq': '常见问题',
     'hero.eyebrow': '免费 · 开源 · Chrome 扩展',
     'hero.h1': '一眼看清你的 AI 编程额度<span class="hl">还剩多少</span>。',
-    'hero.lead': '一个侧边栏，同时显示 Claude Code、Codex、Cursor、Grok Build、Grok Bot 和 Gemini 的剩余额度——包括重置时间、消耗速度和低额度提醒。不用绑定账号、不用 API key，数据不出你的浏览器。',
+    'hero.lead': '一个侧边栏，同时显示 Claude Code、Codex、Cursor、Grok Build、Grok Bot 和 Gemini 的剩余额度——包括重置时间、消耗速度和低额度提醒。不用绑定账号、不用 API key，数据不出你的浏览器。还有一个发量小人：额度烧得越多头发越少，隔一阵就催你起来动一动。',
     'hero.download': '下载 Chrome 扩展',
     'hero.downloadSub': '.zip · 最新版本',
     'hero.github': '去 GitHub 看源码',
     'hero.latest': '最新版本',
     'hero.compat': '支持 Chrome 及其他 Chromium 内核浏览器（Edge、Brave、Arc）。这个按钮永远指向 GitHub 上最新发布的版本，不会下到旧版。',
     'hero.badgeNote': '工具栏角标显示最低的那个额度',
-    'hero.sample': '示意图，数据为示例。',
+    'hero.sample': '真实面板，数据为示例。',
+    'mascot.eyebrow': 'v1.3 新增 · 也要记得休息',
+    'mascot.h2': '一个随着额度消耗掉头发的小人，会催你起来动一动。',
+    'mascot.lead': 'vibe coding 时会耗尽的不只是额度。面板里现在多了一个小伙伴，顺便也盯着你。',
+    'mascot.cap1': '发量跟着你的平均剩余额度走。',
+    'mascot.cap2': '休息时间：卡片蒙上磨砂，做完一项活动才恢复。',
+    'mascot.1': '<b>发量 = 额度。</b> 小人漂在面板上，平均剩余额度越低头发越少。可以拖到任何位置，也可以让它自己晃。',
+    'mascot.2': '<b>每 2 小时催你动一次</b>（某个产品 2 小时内烧掉超过 10% 时改为每小时）。卡片会蒙上一层磨砂，从 100 个活动里随机给你 2 到 3 个伸展或休息小任务。',
+    'mascot.3': '<b>选一个，去做，回来点「完成」。</b> 遮罩消失、头发长回来，数字重新可读。',
+    'mascot.4': '<b>可选的「动一动提醒」</b>（默认关闭）：某个产品 2 小时内烧掉超过 10% 额度时弹桌面通知，每个产品每 2 小时最多一次。只是提醒，不是锁——扩展拦不住你的终端。',
+    'mascot.note': '<b>不喜欢？</b> 小人和动一动提醒都是 ⚙ 里的开关。关掉之后面板就回到纯数字。',
+    'faq.7q': '能关掉发量小人吗？',
+    'faq.7a': '可以。在面板里打开 ⚙，取消勾选「发量小人」，休息遮罩也会一起关掉。「动一动提醒」是另一个独立开关，不主动打开就不会提醒。',
     'strip.label': '读取的就是你平时在用的那些额度页面',
     'feat.eyebrow': '它能做什么',
     'feat.h2': '不用再在六个页面之间来回切换查额度。',
@@ -549,6 +573,8 @@ function applyLang(next) {
     : 'Coding Agents Usage — see your remaining Claude Code, Codex, Cursor, Grok & Gemini quota at a glance';
   try { localStorage.setItem('uiLang', lang); } catch (e) {}
   // The install demo was recorded once per language (Chrome's own UI is in that language too).
+  document.querySelectorAll('#hero-shot, #mascot-shot-1').forEach((img) => { img.src = 'shot-panel-' + lang + '.png'; });
+  const m2 = document.getElementById('mascot-shot-2'); if (m2) m2.src = 'shot-break-' + lang + '.png';
   const v = document.getElementById('demo-video');
   if (v && v.dataset.lang !== lang) {
     v.dataset.lang = lang;
@@ -595,7 +621,6 @@ function renderRelease() {
   v.textContent = 'v' + release.version;
   const subs = [document.getElementById('dl-sub'), document.getElementById('dl-sub2')];
   subs.forEach((el) => { if (el) el.textContent = (lang === 'zh' ? '.zip · v' : '.zip · v') + release.version; });
-  document.getElementById('mock-version').textContent = 'v' + release.version + (lang === 'zh' ? ' · 已是最新' : ' · up to date');
   if (release.publishedAt) {
     const date = new Date(release.publishedAt);
     const text = new Intl.DateTimeFormat(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
@@ -645,40 +670,6 @@ async function loadRelease() {
     }
   } catch (e) { /* no baked file (e.g. local preview) — keep the generic label */ }
 }
-
-/* =====================================================================
-   3) The illustrative side panel in the hero, drawn from a small data
-      table so it stays crisp at any size and always shows all agents.
-   ===================================================================== */
-const MOCK = [
-  { name: 'Claude Code', color: '#D97757', pct: 62, label: 'Weekly (All models)', reset: 'reset in 3d', bar: 80, barLabel: 'Session (5h)', burn: 'Burning ~9%/day · lasts till reset', spark: [100, 96, 90, 88, 81, 75, 70, 62] },
-  { name: 'Codex', color: '#5CD6B3', pct: 45, label: 'Weekly', reset: 'reset in 2d', bar: 70, barLabel: '5-hour limit', burn: 'Burning ~14%/day · lasts till reset', spark: [100, 91, 84, 77, 66, 58, 51, 45] },
-  { name: 'Grok Build', color: '#B78CF0', pct: 15, label: 'Weekly (SuperGrok)', reset: 'reset in 4d', burn: '~1d to empty (before reset!)', cls: 'bad', spark: [100, 80, 66, 52, 40, 31, 22, 15] },
-  { name: 'Cursor', color: '#6E9BF5', pct: 88, label: 'Cursor Models', reset: 'reset in 4d', plan: 'Pro $20/mo', burn: 'Barely used lately', spark: [100, 99, 97, 95, 93, 91, 89, 88] },
-  { name: 'Grok Bot', color: '#F49AC1', pct: 70, label: 'Weekly usage', reset: 'reset in 4d', burn: 'Burning ~7%/day · lasts till reset', spark: [100, 95, 92, 87, 82, 78, 74, 70] },
-  { name: 'Gemini', color: '#3B78E7', pct: 27, label: 'Weekly', reset: 'reset in 1d', bar: 40, barLabel: 'Current usage', burn: '~2d to empty (before reset!)', cls: 'warn', spark: [100, 88, 76, 64, 55, 44, 35, 27] },
-];
-function sparkline(points, color) {
-  const w = 100, h = 22, max = 100;
-  const step = w / (points.length - 1);
-  const d = points.map((p, i) => (i ? 'L' : 'M') + (i * step).toFixed(1) + ' ' + (h - 2 - (p / max) * (h - 4)).toFixed(1)).join(' ');
-  return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round"/></svg>';
-}
-document.getElementById('mock-cards').innerHTML = MOCK.map((a) => {
-  const C = 2 * Math.PI * 20;
-  return '<div class="card">' +
-    '<div class="name"><i style="background:' + a.color + '"></i>' + a.name + (a.plan ? '<span class="plan">' + a.plan + '</span>' : '') + '</div>' +
-    '<div class="row">' +
-      '<div class="ring"><svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="#3a4150" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="' + a.color + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (C * a.pct / 100).toFixed(1) + ' ' + C.toFixed(1) + '"/></svg>' +
-      '<div class="pct"><div><b style="color:' + a.color + '">' + a.pct + '%</b><br><small>left</small></div></div></div>' +
-      '<div class="lines"><div class="l1"><span>' + a.label + '</span><span>' + a.reset + '</span></div>' +
-      (a.bar != null ? '<div class="bar"><i style="width:' + a.bar + '%;background:' + a.color + '"></i></div><div class="l1"><span style="color:var(--panel-muted)">' + a.barLabel + '</span><span>' + a.bar + '% left</span></div>' : '') +
-      sparkline(a.spark, a.color) +
-      '</div>' +
-    '</div>' +
-    '<div class="burn ' + (a.cls || '') + '">🔥 ' + a.burn + '</div>' +
-  '</div>';
-}).join('');
 
 /* ---------- boot: language preference (stored → browser language → English) ---------- */
 // ?lang=zh / ?lang=en in the URL wins (handy for sharing a Chinese link), then the stored choice, then the browser language.
