@@ -10,6 +10,7 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 ## Download
 
 [![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/coding-agent-usage-tracking?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)
+[![Total downloads](https://img.shields.io/github/downloads/jjliu6/coding-agent-usage-tracking/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/coding-agent-usage-tracking/releases)
 
 The version on the button is the one you get. No GitHub account, no git, no build step —
 [download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip),
@@ -17,6 +18,10 @@ unzip it, and load the folder in Chrome. See [Install](#install) below. Every re
 versioned copy (`coding_agents_usage-<version>.zip`) on the
 [releases page](https://github.com/jjliu6/coding-agent-usage-tracking/releases) if you want to keep
 several versions around.
+
+**Not a GitHub person?** The same download plus step-by-step install instructions live on the
+[product landing page](https://jjliu6.github.io/coding-agent-usage-tracking/) — send that link to
+anyone who just wants the extension. It shows the same latest version as the button above.
 
 <sub>Want the newest unreleased code instead? Grab the
 [source zip of `main`](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip) —
@@ -73,6 +78,7 @@ replace the folder's contents, then click the ↻ reload button on the extension
 - `popup.html` / `popup.js` / `i18n.js` — the side-panel dashboard (English / 中文)
 - `_locales/` — Chrome Store / `chrome://extensions` name and description
 - `icons/` — extension icons
+- `docs/` — the landing page (`index.html`) published to GitHub Pages, plus README screenshots
 
 ## Development
 
@@ -103,6 +109,17 @@ it at runtime (`chrome.runtime.getManifest().version`), `npm run build` puts
 it in the zip's filename, and the Release workflow uses it for the `vX.Y.Z` tag
 that the Download badge above and the in-panel update check both look at.
 `npm test` fails if `package.json` drifts out of sync with it.
+
+### Landing page
+
+`docs/index.html` is a standalone landing page for people who don't use GitHub:
+<https://jjliu6.github.io/coding-agent-usage-tracking/>. The Landing page workflow
+(`.github/workflows/pages.yml`) publishes the `docs/` folder to GitHub Pages on
+every push to `main` that touches it, and again after every successful Release so
+the version baked into the page is current. The page's Download button uses the
+same `releases/latest/download/coding-agents-usage.zip` link as the README, and it
+fetches the latest version number from GitHub's API when it loads, so it never
+needs a manual update. One-time setup: **Settings → Pages → Source: GitHub Actions**.
 
 ## Disclaimer
 

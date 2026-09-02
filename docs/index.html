@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coding Agents Usage — see your remaining Claude Code, Codex, Cursor, Grok &amp; Gemini quota at a glance</title>
+<meta name="description" content="A free, open-source Chrome extension that shows how much usage you have left for Claude Code, Codex, Grok Build, Cursor, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account, nothing leaves your browser.">
+<link rel="icon" href="icon-128.png">
+<meta property="og:title" content="Coding Agents Usage — your AI coding quota, at a glance">
+<meta property="og:description" content="Free Chrome extension: remaining usage for Claude Code, Codex, Cursor, Grok and Gemini in one side panel. Download the latest release.">
+<meta property="og:image" content="https://jjliu6.github.io/coding-agent-usage-tracking/icon-128.png">
+<meta property="og:type" content="website">
+<style>
+  /* ---------- design tokens ---------- */
+  :root {
+    --bg: #f7f8fa;
+    --bg-elev: #ffffff;
+    --bg-soft: #eef1f5;
+    --fg: #16191f;
+    --fg-muted: #5c6472;
+    --fg-faint: #8a92a0;
+    --line: #e2e6ec;
+    --accent: #1f9d7c;        /* mint from the extension icon, darkened for light backgrounds */
+    --accent-strong: #167b61;
+    --accent-soft: #e3f5ef;
+    --panel: #1b1f27;         /* the side panel's dark chrome */
+    --panel-card: #262b35;
+    --panel-fg: #e9ecf1;
+    --panel-muted: #9aa3b2;
+    --ok: #5CD6B3; --warn: #F5B74A; --bad: #F26D6D;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+    --max: 1120px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1116; --bg-elev: #171a21; --bg-soft: #1d212a;
+      --fg: #eceff4; --fg-muted: #a3abb9; --fg-faint: #6f7785;
+      --line: #262b36; --accent: #4fd1a8; --accent-strong: #7fe3c3; --accent-soft: #163329;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; overflow-x: hidden; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-strong); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--bg-soft); padding: .1em .4em; border-radius: 6px; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { line-height: 1.2; margin: 0 0 .4em; letter-spacing: -.01em; }
+  h2 { font-size: clamp(26px, 3.2vw, 34px); }
+  h3 { font-size: 17px; }
+  p { margin: 0 0 1em; }
+  .muted { color: var(--fg-muted); }
+  .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-strong); margin-bottom: 14px; }
+  section { padding: 72px 0; }
+  section + section { border-top: 1px solid var(--line); }
+  .lead { font-size: 18px; color: var(--fg-muted); max-width: 640px; }
+
+  /* ---------- header ---------- */
+  header.top { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(160%) blur(10px); background: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; gap: 20px; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--fg); }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  nav.links { margin-left: auto; display: flex; gap: 22px; font-size: 14.5px; }
+  nav.links a { color: var(--fg-muted); }
+  nav.links a:hover { color: var(--fg); text-decoration: none; }
+  .lang { border: 1px solid var(--line); background: var(--bg-elev); color: var(--fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+  .lang:hover { border-color: var(--fg-faint); }
+  @media (max-width: 720px) { nav.links { display: none; } }
+
+  /* ---------- buttons ---------- */
+  .btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 12px; padding: 14px 22px; font-weight: 600; font-size: 16px; border: 1px solid transparent; cursor: pointer; transition: transform .06s ease, box-shadow .15s ease; }
+  .btn:hover { text-decoration: none; }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .btn-primary:hover { background: var(--accent-strong); color: #fff; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-primary { color: #0b1a15; } :root:not([data-theme="light"]) .btn-primary:hover { color: #0b1a15; } }
+  .btn-secondary { background: var(--bg-elev); color: var(--fg); border-color: var(--line); }
+  .btn-secondary:hover { border-color: var(--fg-faint); }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  .btn .sub { display: block; font-weight: 500; font-size: 12.5px; opacity: .85; line-height: 1.2; margin-top: 2px; }
+  .btn .stack { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 72px 0 64px; }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 56px; align-items: center; }
+  .hero .wrap > * { min-width: 0; }
+  .hero h1 { font-size: clamp(34px, 4.6vw, 52px); font-weight: 800; letter-spacing: -.02em; }
+  .hero h1 .hl { color: var(--accent-strong); }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 14px; }
+  .release-meta { font-size: 13.5px; color: var(--fg-muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  .release-meta .dot { color: var(--fg-faint); }
+  .release-meta .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+  .release-meta .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .compat { margin-top: 18px; font-size: 13.5px; color: var(--fg-faint); }
+  @media (max-width: 880px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; } .badge-note { position: static; margin: 0 0 12px; width: fit-content; } }
+
+  /* ---------- mock side panel (drawn with CSS/SVG so it always matches the current build) ---------- */
+  .panel-frame { position: relative; min-width: 0; }
+  .panel { background: var(--panel); color: var(--panel-fg); border-radius: 16px; padding: 14px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06) inset; font-size: 11.5px; max-width: 520px; margin: 0 auto; }
+  .panel-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 12px; }
+  .panel-head b { letter-spacing: .12em; font-size: 11px; }
+  .panel-head .spacer { margin-left: auto; color: var(--panel-muted); font-size: 10.5px; }
+  .panel-head .rb { background: #3a4150; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 10.5px; }
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 460px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel-card); border-radius: 10px; padding: 10px 11px; }
+  .card .name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; margin-bottom: 8px; }
+  .card .name i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .card .name .plan { margin-left: auto; color: var(--panel-muted); font-weight: 400; font-size: 10px; }
+  .card .row { display: flex; align-items: center; gap: 10px; }
+  .ring { position: relative; width: 54px; height: 54px; flex: none; }
+  .ring svg { width: 54px; height: 54px; transform: rotate(-90deg); }
+  .ring .pct { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
+  .ring .pct b { font-size: 13px; }
+  .ring .pct small { font-size: 8.5px; color: var(--panel-muted); }
+  .card .lines { flex: 1; min-width: 0; }
+  .card .l1 { display: flex; justify-content: space-between; gap: 6px; }
+  .card .l1 span:last-child { color: var(--panel-muted); white-space: nowrap; }
+  .card .l1 span:first-child { min-width: 0; }
+  .bar { height: 4px; border-radius: 4px; background: #3a4150; margin: 6px 0 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px; }
+  .card .burn { color: var(--panel-muted); margin-top: 8px; display: flex; gap: 6px; align-items: center; }
+  .card .burn.warn { color: var(--warn); }
+  .card .burn.bad { color: var(--bad); }
+  .spark { width: 100%; height: 22px; margin-top: 6px; display: block; }
+  .panel-foot { display: flex; justify-content: space-between; color: var(--panel-muted); font-size: 10.5px; padding: 12px 4px 0; }
+  .panel-foot .new { color: var(--ok); }
+  .badge-note { position: absolute; top: -30px; right: 10px; background: var(--bg-elev); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; }
+  .badge-note .b { background: var(--bad); color: #fff; font-weight: 700; font-size: 10px; padding: 1px 5px; border-radius: 4px; }
+  .sample { text-align: center; font-size: 12px; color: var(--fg-faint); margin-top: 14px; }
+
+  /* ---------- agent strip ---------- */
+  .strip { padding: 34px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-elev); }
+  .strip .wrap { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 14px; align-items: center; }
+  .strip .label { width: 100%; text-align: center; font-size: 13px; color: var(--fg-faint); margin-bottom: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-weight: 600; font-size: 14px; }
+  .chip i { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* ---------- features ---------- */
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; }
+  @media (max-width: 880px) { .grid3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .grid3 { grid-template-columns: 1fr; } }
+  .feat { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+  .feat .ico { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-strong); display: grid; place-items: center; margin-bottom: 14px; }
+  .feat .ico svg { width: 20px; height: 20px; }
+  .feat p { margin: 0; color: var(--fg-muted); font-size: 15px; }
+
+  /* ---------- install ---------- */
+  .steps { counter-reset: step; display: grid; gap: 14px; margin-top: 32px; max-width: 760px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .step::before { counter-increment: step; content: counter(step); width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 15px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .step::before { color: #0b1a15; } }
+  .step h3 { margin-bottom: 4px; }
+  .step p { margin: 0; color: var(--fg-muted); font-size: 15px; }
+  .demo { margin: 0; max-width: 760px; }
+  .demo .vid { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: #fff; }
+  .demo video { display: block; width: 100%; height: auto; }
+  .demo figcaption { font-size: 13.5px; color: var(--fg-faint); margin-top: 10px; text-align: center; }
+  .demo .lead-in { font-size: 15px; color: var(--fg-muted); margin: 6px 0 10px; }
+  .note { margin-top: 22px; max-width: 760px; background: var(--accent-soft); border-radius: var(--radius); padding: 16px 20px; font-size: 14.5px; color: var(--fg); }
+  .note b { color: var(--accent-strong); }
+  .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: start; }
+  @media (max-width: 800px) { .split { grid-template-columns: minmax(0, 1fr); } }
+  ul.checks { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 12px; }
+  ul.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; color: var(--fg-muted); font-size: 15px; }
+  ul.checks li svg { width: 22px; height: 22px; color: var(--accent); margin-top: 2px; }
+  ul.checks li b { color: var(--fg); }
+
+  /* ---------- faq ---------- */
+  .faq { max-width: 760px; margin-top: 28px; }
+  details { border-top: 1px solid var(--line); padding: 16px 0; }
+  details:last-child { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; font-size: 16.5px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--fg-faint); font-weight: 400; font-size: 20px; line-height: 1; }
+  details[open] summary::after { content: "–"; }
+  details p { margin: 10px 0 0; color: var(--fg-muted); font-size: 15px; }
+
+  /* ---------- bottom cta + footer ---------- */
+  .bottom { text-align: center; }
+  .bottom .cta { justify-content: center; }
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; font-size: 13.5px; color: var(--fg-faint); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 28px; justify-content: space-between; }
+  footer p { margin: 0; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon-128.png" alt=""><span data-i18n="brand">Coding Agents Usage</span></a>
+    <nav class="links">
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#install" data-i18n="nav.install">Install</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+    <button class="lang" id="lang" type="button" aria-label="Switch language">中文</button>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow" data-i18n="hero.eyebrow">Free · Open source · Chrome extension</span>
+      <h1 data-i18n-html="hero.h1">Know how much AI coding quota you have <span class="hl">left</span> — at a glance.</h1>
+      <p class="lead" data-i18n="hero.lead">One side panel shows your remaining usage for Claude Code, Codex, Cursor, Grok Build, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account linking, no API keys, and nothing leaves your browser.</p>
+
+      <div class="cta">
+        <a class="btn btn-primary" id="download" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span class="stack">
+            <span data-i18n="hero.download">Download for Chrome</span>
+            <span class="sub" id="dl-sub" data-i18n="hero.downloadSub">.zip · latest release</span>
+          </span>
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.68-1.28-1.68-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.05.78 2.12v3.14c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+          <span data-i18n="hero.github">View on GitHub</span>
+        </a>
+      </div>
+
+      <div class="release-meta" id="release-meta">
+        <span class="pill" id="rel-version" data-i18n="hero.latest">Latest release</span>
+        <span id="rel-date" hidden></span>
+        <span class="dot" id="rel-dot1" hidden>·</span>
+        <span id="rel-size" hidden></span>
+        <span class="dot" id="rel-dot2" hidden>·</span>
+        <span id="rel-downloads" hidden></span>
+        <span class="dot">·</span>
+        <a id="rel-all" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases" target="_blank" rel="noopener" data-i18n="hero.allReleases">All releases</a>
+      </div>
+      <p class="compat" data-i18n="hero.compat">Works in Chrome and other Chromium browsers (Edge, Brave, Arc). The button always points to the newest build on GitHub — you never download an outdated version.</p>
+    </div>
+
+    <div class="panel-frame">
+      <div class="badge-note"><span class="b">15%</span><span data-i18n="hero.badgeNote">Toolbar badge shows your lowest quota</span></div>
+      <div class="panel" aria-hidden="true">
+        <div class="panel-head"><span>✦</span><b>CODING AGENTS</b><span class="spacer">Updated 2m ago · number = remaining</span><span class="rb">Refresh</span></div>
+        <div class="cards" id="mock-cards"></div>
+        <div class="panel-foot"><span>Tracked: 6 agents</span><span id="mock-version">v1.2.2 · up to date</span></div>
+      </div>
+      <p class="sample" data-i18n="hero.sample">Illustration with sample data.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AGENTS ============ -->
+<div class="strip">
+  <div class="wrap">
+    <div class="label" data-i18n="strip.label">Tracks the usage pages you already use</div>
+    <span class="chip"><i style="background:#D97757"></i>Claude Code</span>
+    <span class="chip"><i style="background:#5CD6B3"></i>Codex</span>
+    <span class="chip"><i style="background:#B78CF0"></i>Grok Build</span>
+    <span class="chip"><i style="background:#6E9BF5"></i>Cursor</span>
+    <span class="chip"><i style="background:#F49AC1"></i>Grok Bot</span>
+    <span class="chip"><i style="background:#3B78E7"></i>Gemini</span>
+  </div>
+</div>
+
+<!-- ============ FEATURES ============ -->
+<section id="features">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="feat.eyebrow">What it does</span>
+    <h2 data-i18n="feat.h2">Stop tab-hopping to check six different usage pages.</h2>
+    <p class="lead" data-i18n="feat.lead">Every AI coding tool hides its quota in a different place. This extension reads them all and puts the numbers where you can see them.</p>
+
+    <div class="grid3">
+      <div class="feat">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3 data-i18n="feat.1h">All quotas, one click</h3>
+        <p data-i18n="feat.1p">Weekly and short-term limits for all six agents, plus exactly when each one resets. Pick which agents to track in ⚙.</p>
+      </div>
+      <div class="feat">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 5-8 4 5"/></svg></div>
+        <h3 data-i18n="feat.2h">Burn rate &amp; 7-day trend</h3>
+        <p data-i18n="feat.2p">After a few hours of history it estimates how fast you're spending and warns when you'll run out before the next reset. Each card draws a sparkline.</p>
+      </div>
+      <div class="feat">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="3"/><circle cx="17" cy="8" r="2.5" fill="currentColor" stroke="none"/></svg></div>
+        <h3 data-i18n="feat.3h">Badge you can't miss</h3>
+        <p data-i18n="feat.3p">The toolbar icon always shows your lowest remaining percentage in green, amber or red — no need to open the panel at all.</p>
+      </div>
+      <div class="feat">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></div>
+        <h3 data-i18n="feat.4h">Low-quota alerts</h3>
+        <p data-i18n="feat.4p">Desktop notification when any tracked agent drops below 15%, and again below 5%. Turn it off in settings if you'd rather not.</p>
+      </div>
+      <div class="feat">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></div>
+        <h3 data-i18n="feat.5h">Quiet hourly auto-check</h3>
+        <p data-i18n="feat.5p">Once an hour it quietly re-reads your usage pages in background tabs without stealing focus. Hit Refresh any time for a guaranteed update.</p>
+      </div>
+      <div class="feat">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3 data-i18n="feat.6h">Private by design</h3>
+        <p data-i18n="feat.6p">No API keys, no account linking. It reads the numbers off pages you're already signed into and keeps everything in your browser's local storage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section id="install">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="install.eyebrow">Install in 2 minutes</span>
+    <h2 data-i18n="install.h2">No Chrome Web Store, no build step — just a folder.</h2>
+    <p class="lead" data-i18n="install.lead">The extension ships as a plain .zip. You unzip it once and tell Chrome where the folder is.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3 data-i18n="install.s1h">Download the .zip</h3>
+          <p data-i18n-html="install.s1p">Use the <a href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">Download</a> button on this page. It is always the newest release.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3 data-i18n="install.s2h">Unzip it somewhere permanent</h3>
+          <p data-i18n-html="install.s2p">Double-click on macOS, or right-click → <b>Extract All…</b> on Windows. You get a folder containing <code>manifest.json</code>. Keep it out of Downloads — Chrome loads the extension from this folder every time it starts.</p>
+        </div>
+      </div>
+      <figure class="demo">
+        <p class="lead-in" data-i18n="install.demoLead">Steps 3 and 4 look like this in Chrome (10 seconds, loops):</p>
+        <div class="vid">
+          <video id="demo-video" data-lang="en" autoplay muted loop playsinline preload="metadata" poster="install-demo-en-poster.png" width="1600" height="650">
+            <source src="install-demo-en.webm" type="video/webm">
+          </video>
+        </div>
+        <figcaption data-i18n="install.demoCap">Recorded in a real Chrome. The folder picker is your operating system's own dialog, so it will look a little different.</figcaption>
+      </figure>
+      <div class="step">
+        <div>
+          <h3 data-i18n-html="install.s3h">Open <code>chrome://extensions</code> and turn on Developer mode</h3>
+          <p data-i18n="install.s3p">Paste the address into Chrome's address bar. The Developer mode toggle is in the top-right corner.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3 data-i18n="install.s4h">Click “Load unpacked” and pick the folder</h3>
+          <p data-i18n="install.s4p">Select the unzipped folder (the one with manifest.json inside). The extension icon appears in the toolbar — pin it if you like.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3 data-i18n="install.s5h">Click the icon, then Refresh</h3>
+          <p data-i18n="install.s5p">The dashboard opens in Chrome's side panel. Press Refresh to fetch your numbers — a few tabs may flash open and close while it reads each usage page. Switch to 中文 in the header if you prefer.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note" data-i18n-html="install.note"><b>Why “Developer mode”?</b> Chrome calls any extension loaded from a folder a “developer” extension. Nothing here needs coding — it's just how Chrome installs extensions outside its store.</div>
+  </div>
+</section>
+
+<!-- ============ UPDATES + PRIVACY ============ -->
+<section id="updates">
+  <div class="wrap split">
+    <div>
+      <span class="eyebrow" data-i18n="upd.eyebrow">Staying up to date</span>
+      <h2 data-i18n="upd.h2">The panel tells you when there's a newer version.</h2>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="upd.1">Once a day the extension asks GitHub what the newest release is. When there is one, the version line at the bottom of the panel turns into a <b>“New version available — download”</b> link.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="upd.2">To update: download the .zip again, replace the contents of your extension folder, then press the ↻ reload button on the extension's card in <code>chrome://extensions</code>. Your settings and history stay.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="upd.3">This page and the Download button are synced with GitHub too: the version shown above is fetched live from the latest release.</span></li>
+      </ul>
+    </div>
+    <div>
+      <span class="eyebrow" data-i18n="priv.eyebrow">Privacy</span>
+      <h2 data-i18n="priv.h2">Your usage data never leaves your browser.</h2>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/></svg><span data-i18n-html="priv.1"><b>No server.</b> Numbers are read from each product's own usage page and stored in <code>chrome.storage.local</code>.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/></svg><span data-i18n-html="priv.2"><b>No accounts, no keys.</b> It only works on pages you're already logged into. If you're signed out, the card says so and links you to that page.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/></svg><span data-i18n-html="priv.3"><b>One optional request.</b> The daily update check asks GitHub for the latest version number and sends nothing about you. You can turn it off in ⚙.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="wrap">
+    <span class="eyebrow">FAQ</span>
+    <h2 data-i18n="faq.h2">Questions people ask</h2>
+    <div class="faq">
+      <details>
+        <summary data-i18n="faq.1q">Why isn't it on the Chrome Web Store?</summary>
+        <p data-i18n="faq.1a">It's a small open-source side project that reads other products' pages, and store review for that kind of extension is slow and unpredictable. Shipping a .zip from GitHub means every fix reaches you the same day. You can inspect every file in the folder — it's plain JavaScript.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.2q">Is it safe? What can it access?</summary>
+        <p data-i18n="faq.2a">It only has permission for the five usage-page domains (claude.ai, chatgpt.com, grok.com, cursor.com, gemini.google.com), and it only reads the numbers displayed there. It cannot see other sites, and it makes no network requests apart from the optional daily version check.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.3q">Which browsers work?</summary>
+        <p data-i18n="faq.3a">Google Chrome, plus any Chromium-based browser with a side panel: Edge, Brave, Arc, Vivaldi. Firefox and Safari are not supported.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.4q">A card says it couldn't read the page.</summary>
+        <p data-i18n="faq.4a">Almost always you're signed out of that product. Click the link on the card, sign in, then press Refresh. Some pages (Cursor, Grok) won't render in a background tab, so the hourly auto-check keeps their last value — Refresh briefly brings them to the front for a guaranteed read.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.5q">I don't use one of the agents.</summary>
+        <p data-i18n="faq.5a">Open ⚙ in the panel and untick it. Unticked agents are skipped by Refresh and hidden from the dashboard and the badge.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.6q">Can I get the very latest unreleased code?</summary>
+        <p data-i18n-html="faq.6a">Yes — grab the <a href="https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip">source zip of the main branch</a>. It installs the same way, just with a few extra development files in the folder.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOTTOM CTA ============ -->
+<section class="bottom">
+  <div class="wrap">
+    <h2 data-i18n="bottom.h2">Ready? It's free.</h2>
+    <p class="lead" style="margin: 0 auto" data-i18n="bottom.lead">Download, unzip, load the folder. Two minutes from now you'll know exactly how much quota you have left.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span class="stack"><span data-i18n="hero.download">Download for Chrome</span><span class="sub" id="dl-sub2" data-i18n="hero.downloadSub">.zip · latest release</span></span>
+      </a>
+      <a class="btn btn-secondary" href="#install" data-i18n="bottom.how">How to install</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p data-i18n-html="foot.built">Built by <a href="https://x.com/jjl13579" target="_blank" rel="noopener">Junjie Liu</a> at <a href="https://philosophie.ai" target="_blank" rel="noopener">Philosophie AI</a> · MIT License · <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">Source on GitHub</a></p>
+    <p data-i18n="foot.disclaimer">Unofficial. Not affiliated with Anthropic, OpenAI, xAI, Cursor or Google. It only reads usage numbers already shown on each product's own page.</p>
+  </div>
+</footer>
+
+<script>
+/* =====================================================================
+   1) Translations. Every element with data-i18n="key" gets its text
+      replaced; data-i18n-html keys may contain simple HTML (links, <b>).
+   ===================================================================== */
+const I18N = {
+  en: {}, // English is what's already in the HTML; we capture it on load.
+  zh: {
+    'brand': 'Coding Agents 额度',
+    'nav.features': '功能', 'nav.install': '安装', 'nav.faq': '常见问题',
+    'hero.eyebrow': '免费 · 开源 · Chrome 扩展',
+    'hero.h1': '一眼看清你的 AI 编程额度<span class="hl">还剩多少</span>。',
+    'hero.lead': '一个侧边栏，同时显示 Claude Code、Codex、Cursor、Grok Build、Grok Bot 和 Gemini 的剩余额度——包括重置时间、消耗速度和低额度提醒。不用绑定账号、不用 API key，数据不出你的浏览器。',
+    'hero.download': '下载 Chrome 扩展',
+    'hero.downloadSub': '.zip · 最新版本',
+    'hero.github': '去 GitHub 看源码',
+    'hero.latest': '最新版本',
+    'hero.allReleases': '全部版本',
+    'hero.compat': '支持 Chrome 及其他 Chromium 内核浏览器（Edge、Brave、Arc）。这个按钮永远指向 GitHub 上最新发布的版本，不会下到旧版。',
+    'hero.badgeNote': '工具栏角标显示最低的那个额度',
+    'hero.sample': '示意图，数据为示例。',
+    'strip.label': '读取的就是你平时在用的那些额度页面',
+    'feat.eyebrow': '它能做什么',
+    'feat.h2': '不用再在六个页面之间来回切换查额度。',
+    'feat.lead': '每个 AI 编程工具都把额度藏在不同的地方。这个扩展把它们统统读出来，放在你一眼就能看到的位置。',
+    'feat.1h': '所有额度，一键查看',
+    'feat.1p': '六个产品的每周额度和短周期额度，以及各自的重置时间。在 ⚙ 里勾选你要跟踪的产品。',
+    'feat.2h': '消耗速度 & 7 天走势',
+    'feat.2p': '积累几小时数据后，它会估算你的消耗速度，并在「重置前就会用完」时提前预警。每张卡片都有一条 7 天走势线。',
+    'feat.3h': '不会错过的角标',
+    'feat.3p': '工具栏图标始终显示你剩余最少的那个百分比，绿 / 黄 / 红三色，不打开面板也心里有数。',
+    'feat.4h': '低额度提醒',
+    'feat.4p': '任一跟踪的产品剩余跌破 15%（以及 5%）时弹出桌面通知。不想要可以在设置里关掉。',
+    'feat.5h': '每小时静默自动检查',
+    'feat.5p': '每小时在后台标签页悄悄重新读取一次额度页，绝不抢焦点。想要保证最新，随时点「刷新」。',
+    'feat.6h': '隐私优先的设计',
+    'feat.6p': '不需要 API key，不需要绑定账号。它只读取你已登录页面上的数字，全部存在浏览器本地。',
+    'install.eyebrow': '两分钟装好',
+    'install.h2': '不走 Chrome 商店，不用编译——就是一个文件夹。',
+    'install.lead': '扩展以普通 .zip 的形式发布。解压一次，然后告诉 Chrome 文件夹在哪里就行。',
+    'install.s1h': '下载 .zip',
+    'install.s1p': '点本页的 <a href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">下载</a> 按钮，永远是最新发布的版本。',
+    'install.s2h': '解压到一个固定的位置',
+    'install.s2p': 'macOS 双击即可，Windows 右键 → <b>全部解压缩…</b>。你会得到一个包含 <code>manifest.json</code> 的文件夹。别放在「下载」目录里——Chrome 每次启动都会从这个文件夹加载扩展。',
+    'install.demoLead': '第 3、4 步在 Chrome 里是这样操作的（10 秒，循环播放）：',
+    'install.demoCap': '在真实的 Chrome 里录制。选文件夹的窗口是你自己操作系统的，样子会略有不同。',
+    'install.s3h': '打开 <code>chrome://extensions</code>，打开「开发者模式」',
+    'install.s3p': '把这个地址粘贴到 Chrome 地址栏。「开发者模式」开关在右上角。',
+    'install.s4h': '点「加载已解压的扩展程序」，选中那个文件夹',
+    'install.s4p': '选择解压出来的文件夹（里面有 manifest.json 的那个）。扩展图标会出现在工具栏，可以固定住。',
+    'install.s5h': '点图标，再点「刷新」',
+    'install.s5p': '面板会在 Chrome 侧边栏打开。点「刷新」拉取数据——读取各个额度页时会有几个标签页闪一下自动关闭。面板顶部可以切换 中文 / EN。',
+    'install.note': '<b>为什么要开「开发者模式」？</b> 凡是从文件夹加载的扩展，Chrome 都叫它「开发者」扩展。这里不需要写任何代码——这只是 Chrome 安装商店之外扩展的方式。',
+    'upd.eyebrow': '保持最新',
+    'upd.h2': '有新版本时，面板会告诉你。',
+    'upd.1': '扩展每天向 GitHub 查一次最新版本号。有新版时，面板底部的版本号会变成 <b>「有新版本 — 去下载」</b> 链接。',
+    'upd.2': '更新方法：重新下载 .zip，用新文件替换扩展文件夹里的内容，然后在 <code>chrome://extensions</code> 里点扩展卡片上的 ↻ 重新加载。设置和历史数据都会保留。',
+    'upd.3': '本页面和下载按钮也和 GitHub 同步：上面显示的版本号是实时从最新 Release 读取的。',
+    'priv.eyebrow': '隐私',
+    'priv.h2': '你的用量数据永远不会离开浏览器。',
+    'priv.1': '<b>没有服务器。</b> 数字直接从各产品自己的额度页读取，存在 <code>chrome.storage.local</code> 里。',
+    'priv.2': '<b>不要账号，不要 key。</b> 它只在你已经登录的页面上工作。没登录时卡片会提示，并给你那个页面的链接。',
+    'priv.3': '<b>唯一一个可选的网络请求。</b> 每日更新检查只向 GitHub 询问最新版本号，不发送任何与你有关的数据。可以在 ⚙ 里关闭。',
+    'faq.h2': '常见问题',
+    'faq.1q': '为什么不上 Chrome 应用商店？',
+    'faq.1a': '这是一个读取其他产品页面的小型开源项目，这类扩展的商店审核又慢又不可预测。从 GitHub 直接发 .zip，意味着每个修复当天就能到你手里。文件夹里的每个文件你都可以打开看——就是普通的 JavaScript。',
+    'faq.2q': '安全吗？它能访问什么？',
+    'faq.2a': '它只申请了五个额度页面域名的权限（claude.ai、chatgpt.com、grok.com、cursor.com、gemini.google.com），而且只读取上面显示的数字。它看不到其他网站，除了可选的每日版本检查外不发任何网络请求。',
+    'faq.3q': '支持哪些浏览器？',
+    'faq.3a': 'Google Chrome，以及任何带侧边栏的 Chromium 内核浏览器：Edge、Brave、Arc、Vivaldi。不支持 Firefox 和 Safari。',
+    'faq.4q': '某张卡片说读不到页面。',
+    'faq.4a': '基本上都是因为那个产品没登录。点卡片上的链接登录后再点「刷新」。个别页面（Cursor、Grok）在后台标签页渲染不出来，所以每小时自动检查会保留上一次的值——点「刷新」会短暂把它们切到前台以保证读到。',
+    'faq.5q': '我不用其中某个产品。',
+    'faq.5a': '在面板里打开 ⚙，取消勾选即可。没勾选的产品不会被刷新，也不会出现在面板和角标里。',
+    'faq.6q': '能拿到还没正式发布的最新代码吗？',
+    'faq.6a': '可以——下载 <a href="https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip">main 分支的源码 zip</a>。安装方式完全一样，只是文件夹里多几个开发用的文件。',
+    'bottom.h2': '准备好了？完全免费。',
+    'bottom.lead': '下载、解压、加载文件夹。两分钟后你就能确切知道自己还剩多少额度。',
+    'bottom.how': '怎么安装',
+    'foot.built': '由 <a href="https://x.com/jjl13579" target="_blank" rel="noopener">Junjie Liu</a> @ <a href="https://philosophie.ai" target="_blank" rel="noopener">Philosophie AI</a> 构建 · MIT 协议 · <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">GitHub 源码</a>',
+    'foot.disclaimer': '非官方项目，与 Anthropic、OpenAI、xAI、Cursor、Google 均无关联。它只读取各产品页面上已经展示的用量数字。',
+  },
+};
+
+let lang = 'en';
+function applyLang(next) {
+  lang = next === 'zh' ? 'zh' : 'en';
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n],[data-i18n-html]').forEach((el) => {
+    const isHtml = el.hasAttribute('data-i18n-html');
+    const key = el.getAttribute(isHtml ? 'data-i18n-html' : 'data-i18n');
+    // First time through, remember the English that's already in the HTML.
+    if (!(key in I18N.en)) I18N.en[key] = isHtml ? el.innerHTML : el.textContent;
+    const val = (I18N[lang] && I18N[lang][key]) || I18N.en[key];
+    if (isHtml) el.innerHTML = val; else el.textContent = val;
+  });
+  const btn = document.getElementById('lang');
+  btn.textContent = lang === 'zh' ? 'EN' : '中文';
+  btn.title = lang === 'zh' ? 'Switch to English' : '切换到中文';
+  document.title = lang === 'zh'
+    ? 'Coding Agents 额度 — 一眼看清 Claude Code、Codex、Cursor、Grok、Gemini 还剩多少额度'
+    : 'Coding Agents Usage — see your remaining Claude Code, Codex, Cursor, Grok & Gemini quota at a glance';
+  try { localStorage.setItem('uiLang', lang); } catch (e) {}
+  // The install demo was recorded once per language (Chrome's own UI is in that language too).
+  const v = document.getElementById('demo-video');
+  if (v && v.dataset.lang !== lang) {
+    v.dataset.lang = lang;
+    v.poster = 'install-demo-' + lang + '-poster.png';
+    v.querySelector('source').src = 'install-demo-' + lang + '.webm';
+    v.load();
+    v.play().catch(() => {});
+  }
+  renderRelease(); // date formatting depends on language
+}
+document.getElementById('lang').addEventListener('click', () => applyLang(lang === 'zh' ? 'en' : 'zh'));
+
+/* =====================================================================
+   2) Live release info. The download link itself never needs updating
+      (GitHub's /releases/latest/download/ URL always serves the newest
+      build). This just shows the version / date / size next to it.
+      Order: GitHub API (always fresh) → version.json baked at deploy
+      time (fallback if the API is rate-limited) → generic label.
+   ===================================================================== */
+const REPO = 'jjliu6/coding-agent-usage-tracking';
+const ASSET = 'coding-agents-usage.zip';
+let release = null; // { version, publishedAt, size, downloads }
+
+function parseVersionTag(tag) {
+  const m = String(tag || '').trim().match(/^v?(\d+(?:\.\d+)*)$/i);
+  return m ? m[1] : null;
+}
+function fmtSize(bytes) {
+  if (!bytes) return '';
+  return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.round(bytes / 1024) + ' KB';
+}
+function renderRelease() {
+  const v = document.getElementById('rel-version');
+  const d = document.getElementById('rel-date');
+  const s = document.getElementById('rel-size');
+  const dot = document.getElementById('rel-dot1');
+  if (!release || !release.version) return;
+  v.textContent = 'v' + release.version;
+  const subs = [document.getElementById('dl-sub'), document.getElementById('dl-sub2')];
+  subs.forEach((el) => { if (el) el.textContent = (lang === 'zh' ? '.zip · v' : '.zip · v') + release.version; });
+  document.getElementById('mock-version').textContent = 'v' + release.version + (lang === 'zh' ? ' · 已是最新' : ' · up to date');
+  if (release.publishedAt) {
+    const date = new Date(release.publishedAt);
+    const text = new Intl.DateTimeFormat(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+    d.textContent = (lang === 'zh' ? '发布于 ' : 'released ') + text;
+    d.hidden = false;
+  }
+  if (release.size) { s.textContent = fmtSize(release.size); s.hidden = false; dot.hidden = false; }
+  const dl = document.getElementById('rel-downloads');
+  if (release.downloads) {
+    const n = new Intl.NumberFormat(lang === 'zh' ? 'zh-CN' : 'en-US').format(release.downloads);
+    dl.textContent = lang === 'zh' ? '累计下载 ' + n + ' 次' : n + ' downloads';
+    dl.hidden = false; document.getElementById('rel-dot2').hidden = false;
+  }
+}
+// Total downloads across every release. GitHub counts each download of a release
+// asset, and the landing page and README both link to the same asset, so this
+// covers both — no server of our own needed.
+async function loadDownloads() {
+  try {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/releases?per_page=100', { headers: { Accept: 'application/vnd.github+json' } });
+    if (!r.ok) return null;
+    const list = await r.json();
+    return list.reduce((sum, rel) => sum + (rel.assets || []).reduce((a, x) => a + (x.download_count || 0), 0), 0);
+  } catch (e) { return null; }
+}
+async function loadRelease() {
+  try {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
+    if (r.ok) {
+      const j = await r.json();
+      const asset = (j.assets || []).find((a) => a.name === ASSET);
+      const version = parseVersionTag(j.tag_name);
+      if (version) {
+        release = { version, publishedAt: j.published_at, size: asset ? asset.size : 0 };
+        renderRelease();
+        const downloads = await loadDownloads();
+        if (downloads != null) { release.downloads = downloads; renderRelease(); }
+        return;
+      }
+    }
+  } catch (e) { /* offline or rate-limited — fall through */ }
+  try {
+    const r = await fetch('version.json', { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.version) { release = { version: j.version, publishedAt: j.publishedAt, size: j.size, downloads: j.downloads }; renderRelease(); }
+    }
+  } catch (e) { /* no baked file (e.g. local preview) — keep the generic label */ }
+}
+
+/* =====================================================================
+   3) The illustrative side panel in the hero, drawn from a small data
+      table so it stays crisp at any size and always shows all agents.
+   ===================================================================== */
+const MOCK = [
+  { name: 'Claude Code', color: '#D97757', pct: 62, label: 'Weekly (All models)', reset: 'reset in 3d', bar: 80, barLabel: 'Session (5h)', burn: 'Burning ~9%/day · lasts till reset', spark: [100, 96, 90, 88, 81, 75, 70, 62] },
+  { name: 'Codex', color: '#5CD6B3', pct: 45, label: 'Weekly', reset: 'reset in 2d', bar: 70, barLabel: '5-hour limit', burn: 'Burning ~14%/day · lasts till reset', spark: [100, 91, 84, 77, 66, 58, 51, 45] },
+  { name: 'Grok Build', color: '#B78CF0', pct: 15, label: 'Weekly (SuperGrok)', reset: 'reset in 4d', burn: '~1d to empty (before reset!)', cls: 'bad', spark: [100, 80, 66, 52, 40, 31, 22, 15] },
+  { name: 'Cursor', color: '#6E9BF5', pct: 88, label: 'Cursor Models', reset: 'reset in 4d', plan: 'Pro $20/mo', burn: 'Barely used lately', spark: [100, 99, 97, 95, 93, 91, 89, 88] },
+  { name: 'Grok Bot', color: '#F49AC1', pct: 70, label: 'Weekly usage', reset: 'reset in 4d', burn: 'Burning ~7%/day · lasts till reset', spark: [100, 95, 92, 87, 82, 78, 74, 70] },
+  { name: 'Gemini', color: '#3B78E7', pct: 27, label: 'Weekly', reset: 'reset in 1d', bar: 40, barLabel: 'Current usage', burn: '~2d to empty (before reset!)', cls: 'warn', spark: [100, 88, 76, 64, 55, 44, 35, 27] },
+];
+function sparkline(points, color) {
+  const w = 100, h = 22, max = 100;
+  const step = w / (points.length - 1);
+  const d = points.map((p, i) => (i ? 'L' : 'M') + (i * step).toFixed(1) + ' ' + (h - 2 - (p / max) * (h - 4)).toFixed(1)).join(' ');
+  return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+}
+document.getElementById('mock-cards').innerHTML = MOCK.map((a) => {
+  const C = 2 * Math.PI * 20;
+  return '<div class="card">' +
+    '<div class="name"><i style="background:' + a.color + '"></i>' + a.name + (a.plan ? '<span class="plan">' + a.plan + '</span>' : '') + '</div>' +
+    '<div class="row">' +
+      '<div class="ring"><svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="20" fill="none" stroke="#3a4150" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="' + a.color + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (C * a.pct / 100).toFixed(1) + ' ' + C.toFixed(1) + '"/></svg>' +
+      '<div class="pct"><div><b style="color:' + a.color + '">' + a.pct + '%</b><br><small>left</small></div></div></div>' +
+      '<div class="lines"><div class="l1"><span>' + a.label + '</span><span>' + a.reset + '</span></div>' +
+      (a.bar != null ? '<div class="bar"><i style="width:' + a.bar + '%;background:' + a.color + '"></i></div><div class="l1"><span style="color:var(--panel-muted)">' + a.barLabel + '</span><span>' + a.bar + '% left</span></div>' : '') +
+      sparkline(a.spark, a.color) +
+      '</div>' +
+    '</div>' +
+    '<div class="burn ' + (a.cls || '') + '">🔥 ' + a.burn + '</div>' +
+  '</div>';
+}).join('');
+
+/* ---------- boot: language preference (stored → browser language → English) ---------- */
+// ?lang=zh / ?lang=en in the URL wins (handy for sharing a Chinese link), then the stored choice, then the browser language.
+const urlLang = new URLSearchParams(location.search).get('lang');
+let stored = null;
+try { stored = localStorage.getItem('uiLang'); } catch (e) {}
+applyLang(urlLang || stored || (String(navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en'));
+loadRelease();
+</script>
+</body>
+</html>

@@ -5,14 +5,17 @@
 <style>
   :root{--card2:#1f232c;--ink:#eef1f6;--ink2:#aab2c0;--muted:#6b7382;--track:#2a2f3a;--line:#23272f;--good:#5ccf9e;--warn:#e6b45c;--bad:#e57373}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{width:100%;max-width:600px;background:#14161c;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);padding:13px}
-  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-  .brand{font-weight:700;letter-spacing:.12em;font-size:12px}
+  body{width:100%;max-width:600px;background:#14161c;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);padding:13px;min-height:100vh;display:flex;flex-direction:column}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .brand{font-weight:700;letter-spacing:.12em;font-size:12px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .brand .s{color:#8fe3c6}
-  .right{display:flex;align-items:center;gap:10px}
-  .upd{font-size:10px;color:var(--muted)}
-  .leg{font-size:10px;color:var(--muted)}
-  .btn{font-size:11px;color:var(--ink);background:#2a2f3a;border:none;border-radius:8px;padding:5px 12px;cursor:pointer}
+  .right{display:flex;align-items:center;gap:8px;flex:none}
+  .upd{font-size:10px;color:var(--muted);white-space:nowrap}
+  .leg{font-size:10px;color:var(--muted);white-space:nowrap}
+  .btn{font-size:11px;color:var(--ink);background:#2a2f3a;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;white-space:nowrap}
+  /* 侧边栏可以被拖得很窄：先收起说明文字，再收起「x 分钟前」，保证头部永远一行 */
+  @media (max-width:500px){.leg{display:none}}
+  @media (max-width:380px){.upd{display:none}}
   .btn:hover{background:#333a46}
   .btn.lang{padding:5px 8px;min-width:40px}
   .grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;align-items:start}
@@ -46,6 +49,9 @@
   .ver a{color:var(--ink2);text-decoration:none}
   .ver a:hover{text-decoration:underline}
   .ver a.new{color:var(--warn);font-weight:600}
+  .credits{font-size:8.5px;color:#4a515e;text-align:center;margin-top:auto;padding-top:22px;line-height:1.5}
+  .credits a{color:#5f6775;text-decoration:none}
+  .credits a:hover{text-decoration:underline}
   .fail{font-size:10.5px;color:var(--bad);margin-top:9px;line-height:1.4}
   .fail a{color:var(--ink2);white-space:nowrap}
   .spark{margin-top:9px;border-bottom:1px solid var(--line)}
@@ -66,6 +72,7 @@
   <div class="grid" id="grid"></div>
   <div class="hint" id="hint"></div>
   <div class="ver" id="ver"></div>
+  <div class="credits" id="credits"></div>
   <script src="agents.js"></script>
   <script src="update.js"></script>
   <script src="i18n.js"></script>

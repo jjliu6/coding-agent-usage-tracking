@@ -1,0 +1,78 @@
+name: Landing page
+
+# Publishes docs/ (the product landing page) to GitHub Pages at
+#   https://jjliu6.github.io/coding-agent-usage-tracking/
+#
+# It runs:
+#   - on every push to main that touches docs/ (page copy / design changes);
+#   - after every successful Release workflow, so the fallback version.json
+#     baked into the page matches the newest release (the page normally asks
+#     GitHub's API live, this file only covers rate-limited visitors);
+#   - manually from the Actions tab.
+#
+# One-time setup: Settings → Pages → "Build and deployment" → Source:
+# "GitHub Actions". (configure-pages tries to enable that itself on the
+# first run; if it can't, flip the setting by hand and re-run.)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # After a Release run, only publish if that run actually succeeded.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Bake latest release info into docs/version.json (fallback for the live API call)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/releases/latest" > /tmp/release.json; then
+            # Total downloads across all releases (GitHub counts every asset download).
+            DOWNLOADS=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '[.[].assets[].download_count] | add // 0' | awk '{s+=$1} END {print s+0}')
+            jq --argjson downloads "$DOWNLOADS" '{
+              version: (.tag_name | ltrimstr("v")),
+              publishedAt: .published_at,
+              size: ([.assets[] | select(.name == "coding-agents-usage.zip") | .size][0]),
+              downloads: $downloads
+            }' /tmp/release.json > docs/version.json
+          else
+            # No release yet (fresh fork) — fall back to the manifest version.
+            node -e 'const v=require("./manifest.json").version; console.log(JSON.stringify({version:v}))' > docs/version.json
+          fi
+          echo "Baked:"; cat docs/version.json
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
