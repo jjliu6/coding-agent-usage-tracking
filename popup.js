@@ -318,7 +318,12 @@ function avgPct(map, ids) {
 }
 
 // 每个发量阶段从一大池子里随机抽 2–3 个活动；同一轮提醒里保持不变
-const ACT_SNOOZE_MS = 45 * 60 * 1000;
+// 到点才催：默认每 2 小时；近 2 小时烧掉超过 10% 则改成 1 小时
+var SIT_INTERVAL_MS = 2 * 3600000;
+var SIT_INTERVAL_BURN_MS = 3600000;
+var MOVE_WINDOW_MS = 2 * 3600000;
+var MOVE_DROP_PCT = 10;
+var ACT_SNOOZE_MS = SIT_INTERVAL_MS;
 
 function activityStage(pct) {
   if (pct > 50) return 'high';
@@ -378,6 +383,30 @@ function actsSnoozed(doneAt, now) {
   return !!(doneAt && now - doneAt < ACT_SNOOZE_MS);
 }
 
+function recentSitBurn(hist, id, now) {
+  const seg = (hist || []).filter((h) => h.id === id && h.t >= now - MOVE_WINDOW_MS && h.t <= now)
+    .sort((x, y) => x.t - y.t);
+  if (seg.length < 2) return 0;
+  let start = 0;
+  for (let i = 1; i < seg.length; i++) { if (seg[i].pct > seg[i - 1].pct + 2) start = i; }
+  const a = seg[start], b = seg[seg.length - 1];
+  return a === b ? 0 : a.pct - b.pct;
+}
+
+function sitIntervalMs(hist, ids, now) {
+  now = now == null ? Date.now() : now;
+  const hard = (ids || []).some((id) => recentSitBurn(hist, id, now) > MOVE_DROP_PCT);
+  return hard ? SIT_INTERVAL_BURN_MS : SIT_INTERVAL_MS;
+}
+
+function sitDue(lastMovedAt, pick, now, interval) {
+  now = now == null ? Date.now() : now;
+  interval = interval == null ? SIT_INTERVAL_MS : interval;
+  if (pick) return true;
+  if (!lastMovedAt) return false;
+  return now - lastMovedAt >= interval;
+}
+
 // 做完运动会把显示发量补回 100%。之后额度再烧，头发还会掉，鼓励再去动。
 function restoreHairBoost(avg) {
   if (avg == null) return 0;
@@ -402,6 +431,7 @@ function completeActivity() {
     chrome.storage.local.set({
       activityPick: null,
       activityDoneAt: Date.now(),
+      lastMovedAt: Date.now(),
       hairBoostPct: restoreHairBoost(avg),
       activityOffer: null,
     });
@@ -478,10 +508,10 @@ function initBuddy(pos) {
   }
 }
 
-function renderActs(pct, pick, snoozed, offer) {
+function renderActs(pct, pick, due, offer) {
   const wrap = document.getElementById('acts');
   if (!wrap) return;
-  if (snoozed || pct == null) {
+  if (!due || pct == null) {
     wrap.hidden = true;
     wrap.innerHTML = '';
     return;
@@ -496,18 +526,25 @@ function renderActs(pct, pick, snoozed, offer) {
   wrap.innerHTML = `<p class="ttl">${t('actHint')}</p>${btns}`;
 }
 
-function renderBuddy(show, pct, pick, snoozed, pos, offer) {
+function renderBuddy(show, pct, pick, due, pos, offer) {
   const buddy = document.getElementById('buddy');
   if (!buddy) return;
   buddy.hidden = !show;
   if (!show) return;
   initBuddy(pos);
-  renderActs(pct, pick, snoozed, offer);
+  renderActs(pct, pick, due, offer);
 }
 
-function setDetailsHidden(hidden) {
+function setVeil(on) {
+  const veil = document.getElementById('veil');
+  const stage = document.getElementById('stage');
   const grid = document.getElementById('grid');
-  if (grid && grid.style) grid.style.display = hidden ? 'none' : '';
+  if (grid && grid.style) grid.style.display = '';
+  if (veil) veil.hidden = !on;
+  if (stage && stage.classList) {
+    if (on) stage.classList.add('veiled');
+    else stage.classList.remove('veiled');
+  }
 }
 
 function renderHair(pct, show) {
@@ -620,7 +657,7 @@ function renderSettings(en, prefs) {
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'buddyPos', 'hairBoostPct', 'activityOffer'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'lastMovedAt', 'buddyPos', 'hairBoostPct', 'activityOffer'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -651,10 +688,16 @@ function render() {
     renderHair(displayHairPct(pct, boost), res.showHair);
     const showMascot = res.showHair !== false && pct != null;
     const pick = res.activityPick || null;
-    const snoozed = actsSnoozed(res.activityDoneAt);
-    const offer = currentOffer(pct, pick, snoozed, res.activityOffer);
-    setDetailsHidden(showMascot && !!pick && !snoozed);
-    renderBuddy(showMascot, pct, pick, snoozed, res.buddyPos, offer);
+    let lastMoved = res.lastMovedAt || res.activityDoneAt || 0;
+    if (!lastMoved) {
+      lastMoved = Date.now();
+      chrome.storage.local.set({ lastMovedAt: lastMoved });
+    }
+    const interval = sitIntervalMs(hist, shown, Date.now());
+    const due = sitDue(lastMoved, pick, Date.now(), interval);
+    const offer = due ? currentOffer(pct, pick, false, res.activityOffer) : null;
+    setVeil(showMascot && due);
+    renderBuddy(showMascot, pct, pick, due, res.buddyPos, offer);
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）

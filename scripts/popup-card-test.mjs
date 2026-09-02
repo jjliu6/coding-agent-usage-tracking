@@ -73,6 +73,8 @@ const els = {
   'brand-name': el(),
   legend: el(),
   grid: el(),
+  stage: el(),
+  veil: el({ hidden: true }),
   upd: el(),
   hint: el(),
   hair: el({ hidden: true }),
@@ -316,17 +318,26 @@ if (picked.length !== 3 || new Set(picked).size !== 3) {
 }
 store.showHair = true;
 delete store.activityPick;
-delete store.activityDoneAt;
 delete store.activityOffer;
+store.lastMovedAt = Date.now();
 ctx.render();
 if (els.buddy.hidden) buddyProblems.push('floating buddy should show when the mascot is on and there is data');
-if (els.acts.hidden) buddyProblems.push('activity list should show until the user completes one');
+if (!els.acts.hidden) buddyProblems.push('activity list should stay away until the sit clock is due');
+if (!els.veil.hidden) buddyProblems.push('veil should stay off until the sit clock is due');
+if (els.grid.style.display === 'none') buddyProblems.push('cards should stay in the DOM when unlocked');
+if (!els.grid.innerHTML) buddyProblems.push('unlocked cards should still render');
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_MS - 1000;
+delete store.activityDoneAt;
+ctx.render();
+if (els.acts.hidden) buddyProblems.push('when due, the 2–3 activities should show');
+if (els.veil.hidden) buddyProblems.push('when due, the frosted veil should cover the cards');
+if (els.grid.style.display === 'none') buddyProblems.push('due state should frost cards, not remove them');
 const nBtns = (els.acts.innerHTML.match(/<button /g) || []).length;
 if (nBtns < 2 || nBtns > 3) {
   buddyProblems.push(`should list 2–3 random activities, got ${nBtns} from ${els.acts.innerHTML}`);
 }
 if (!store.activityOffer || store.activityOffer.stage !== 'high') {
-  buddyProblems.push('first render should persist a high-stage offer');
+  buddyProblems.push('due render should persist a high-stage offer');
 }
 const html1 = els.acts.innerHTML;
 ctx.render();
@@ -335,9 +346,8 @@ if (els.acts.innerHTML !== html1) {
 }
 store.activityPick = store.activityOffer.ids[0];
 ctx.render();
-if (els.grid.style.display !== 'none') {
-  buddyProblems.push('picking an activity should hide the dashboard cards');
-}
+if (els.veil.hidden) buddyProblems.push('picking an activity should keep the veil on');
+if (els.grid.style.display === 'none') buddyProblems.push('picking should not unmount the cards');
 if (!els.acts.innerHTML.includes('Doing:')) {
   buddyProblems.push(`doing state should name the pick, got ${els.acts.innerHTML}`);
 }
@@ -346,28 +356,30 @@ if (!els.acts.innerHTML.includes('data-act="done"')) {
 }
 store.activityPick = null;
 store.activityDoneAt = Date.now();
+store.lastMovedAt = Date.now();
 ctx.render();
-if (els.grid.style.display === 'none') {
-  buddyProblems.push('completing an activity should show the cards again');
-}
+if (!els.veil.hidden) buddyProblems.push('completing an activity should lift the veil');
 if (!els.acts.hidden) {
   buddyProblems.push('completing an activity should dismiss the reminder');
 }
-store.activityDoneAt = Date.now() - (ctx.ACT_SNOOZE_MS + 1000);
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
 store.activityOffer = null;
 ctx.render();
 if (els.acts.hidden) {
-  buddyProblems.push('after the snooze window the 2–3 activities should come back');
+  buddyProblems.push('after the sit interval the 2–3 activities should come back');
 }
+if (els.veil.hidden) buddyProblems.push('after the sit interval the veil should come back');
 const nBtns2 = (els.acts.innerHTML.match(/<button /g) || []).length;
 if (nBtns2 < 2 || nBtns2 > 3) {
-  buddyProblems.push(`after snooze should list 2–3 new activities, got ${nBtns2}`);
+  buddyProblems.push(`after interval should list 2–3 new activities, got ${nBtns2}`);
 }
 store.showHair = false;
 store.activityPick = 'actWater';
 store.activityDoneAt = 0;
 ctx.render();
 if (!els.buddy.hidden) buddyProblems.push('showHair=false should hide the floating buddy');
+if (!els.veil.hidden) buddyProblems.push('hiding the mascot should lift the veil');
 if (els.grid.style.display === 'none') {
   buddyProblems.push('hiding the mascot should not hide the cards');
 }
@@ -375,12 +387,13 @@ delete store.showHair;
 delete store.activityPick;
 delete store.activityDoneAt;
 delete store.activityOffer;
+store.lastMovedAt = Date.now();
 ctx.render();
 if (buddyProblems.length) {
   console.error(buddyProblems.join('\n'));
   process.exit(1);
 }
-console.log('ok  Floating buddy lists 2–3 random activities from a pool of 100; pick hides cards, Done restores them');
+console.log('ok  Sit clock frosts cards when due; pick keeps the veil; Done lifts it');
 
 // --- Completing a move grows the hair back ---
 const growProblems = [];
