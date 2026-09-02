@@ -100,6 +100,46 @@ function maybeNotify(a, oldPct, pct) {
   });
 }
 
+// 动一动提醒（moveReminder，默认关）：某个产品在最近 2 小时内烧掉超过 10% 主额度，
+// 就弹通知让人起来活动。每个产品 2 小时内最多提醒一次（moveNudgedAt 记上次时间）。
+// 只看"上次重置之后"的那段：额度涨回去说明重置过，之前的消耗不算。
+const MOVE_WINDOW_MS = 2 * 3600000;
+const MOVE_DROP_PCT = 10;
+const MOVE_COOLDOWN_MS = 2 * 3600000;
+
+// 返回这段窗口里烧掉的百分点数；数据不够就返回 0
+function recentBurn(hist, id, now) {
+  const seg = hist.filter((h) => h.id === id && h.t >= now - MOVE_WINDOW_MS && h.t <= now)
+    .sort((x, y) => x.t - y.t);
+  if (seg.length < 2) return 0;
+  let start = 0;
+  for (let i = 1; i < seg.length; i++) { if (seg[i].pct > seg[i - 1].pct + 2) start = i; } // 涨上去=重置过
+  const a = seg[start], b = seg[seg.length - 1];
+  return a === b ? 0 : a.pct - b.pct;
+}
+
+function maybeMoveNudge(a, hist) {
+  if (!chrome.notifications) return;
+  const now = a.scraped_at;
+  const burn = recentBurn(hist, a.id, now);
+  if (burn <= MOVE_DROP_PCT) return;
+  chrome.storage.local.get(['moveReminder', 'moveNudgedAt', 'uiLang'], (res) => {
+    if (res.moveReminder !== true) return; // 默认关：明确打开才提醒
+    const last = (res.moveNudgedAt || {})[a.id] || 0;
+    if (now - last < MOVE_COOLDOWN_MS) return;
+    applyStoredLang(res.uiLang);
+    const meta = AGENTS.find((x) => x.id === a.id);
+    chrome.notifications.create('move-' + a.id + '-' + now, {
+      type: 'basic',
+      iconUrl: 'icons/128.png',
+      title: t('moveTitle', { name: (meta && meta.name) || a.id, n: Math.round(burn) }),
+      message: t('moveBody'),
+    }, () => void chrome.runtime.lastError);
+    const stamp = Object.assign({}, res.moveNudgedAt, { [a.id]: now });
+    chrome.storage.local.set({ moveNudgedAt: stamp });
+  });
+}
+
 function saveAgent(a) {
   const run = () => new Promise((resolve) => {
     chrome.storage.local.get(['agents', 'history'], (res) => {
@@ -123,6 +163,7 @@ function saveAgent(a) {
         }
       }
       maybeNotify(merged, oldPct, pct);
+      maybeMoveNudge(merged, hist);
       chrome.storage.local.set({ agents: map, history: hist }, resolve);
     });
   });

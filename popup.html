@@ -9,6 +9,12 @@
   .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .brand{font-weight:700;letter-spacing:.12em;font-size:12px}
   .brand .s{color:#8fe3c6}
+  .left{display:flex;align-items:center;gap:8px;min-width:0}
+  /* 发量小人：头发根数随平均剩余额度变化；掉发用 CSS 过渡做动画 */
+  .mascot{display:inline-flex;align-items:center;cursor:default;flex:0 0 auto}
+  .mascot svg{display:block;width:30px;height:30px;overflow:visible}
+  .mascot .h{transition:opacity .7s ease,transform .7s ease}
+  .mascot .h.off{opacity:0;transform:translateY(7px) rotate(14deg)}
   .right{display:flex;align-items:center;gap:10px}
   .upd{font-size:10px;color:var(--muted)}
   .leg{font-size:10px;color:var(--muted)}
@@ -55,7 +61,7 @@
 </head>
 <body>
   <div class="top">
-    <span class="brand"><span class="s">✦</span> <span id="brand-name">CODING AGENTS</span></span>
+    <div class="left"><span class="brand"><span class="s">✦</span> <span id="brand-name">CODING AGENTS</span></span><span class="mascot" id="hair" hidden></span></div>
     <div class="right"><span class="upd" id="upd"></span><span class="leg" id="legend">number = remaining</span><button class="btn lang" id="lang" type="button" title="切换到中文">中文</button><button class="btn lang" id="gear" type="button" title="Choose tracked agents">⚙</button><button class="btn" id="refresh">Refresh</button></div>
   </div>
   <div class="settings" id="settings" hidden></div>

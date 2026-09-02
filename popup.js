@@ -211,6 +211,76 @@ function ring(pct, color) {
   </svg>`;
 }
 
+// ---- 发量小人（程序员们的头发量）----
+// 把"平均剩余额度"画成一个小脑袋：额度越少头发越少，额度重置时头发长回来。
+// 头发是 24 根固定的 SVG 线段，用 class="off" 隐藏掉的那几根，配合 CSS 过渡就有"掉发"动画。
+const HAIR_N = 24;
+
+// 剩余 pct 时哪几根头发还在。(k*7)%24 是一个打乱后的固定顺序（7 和 24 互质，
+// 所以 k=0..23 恰好走遍每一根），这样掉发是"东一根西一根"，不是从一边整齐剃过去。
+function hairSet(pct) {
+  const shown = Math.round(Math.max(0, Math.min(100, pct == null ? 0 : pct)) / 100 * HAIR_N);
+  const on = new Set();
+  for (let k = 0; k < shown; k++) on.add((k * 7) % HAIR_N);
+  return on;
+}
+
+// 嘴巴跟着心情走：>50 微笑，20–50 面无表情，<20 哭丧脸
+function mouthPath(pct) {
+  if (pct > 50) return 'M12.5 23.5 Q16 26.5 19.5 23.5';
+  if (pct >= 20) return 'M12.5 24 L19.5 24';
+  return 'M12.5 25 Q16 22.5 19.5 25';
+}
+
+function hairHead(pct) {
+  const on = hairSet(pct);
+  const cx = 16, cy = 20, r = 9.5;
+  let strands = '';
+  for (let i = 0; i < HAIR_N; i++) {
+    // 头顶 195°→345° 这段弧上均匀分布；长短交替一下更像头发
+    const a = (195 + i * (150 / (HAIR_N - 1))) * Math.PI / 180;
+    const len = i % 2 ? 6 : 4.5;
+    const x1 = (cx + r * Math.cos(a)).toFixed(1), y1 = (cy + r * Math.sin(a)).toFixed(1);
+    const x2 = (cx + (r + len) * Math.cos(a)).toFixed(1), y2 = (cy + (r + len) * Math.sin(a)).toFixed(1);
+    strands += `<line class="h${on.has(i) ? '' : ' off'}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }
+  return `<svg viewBox="0 0 32 32" aria-hidden="true">
+    <g stroke="#b8895c" stroke-width="1.6" stroke-linecap="round">${strands}</g>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#e9c4a0"/>
+    <circle cx="12.5" cy="19" r="1.2" fill="#2b2222"/><circle cx="19.5" cy="19" r="1.2" fill="#2b2222"/>
+    <path class="m" d="${mouthPath(pct)}" fill="none" stroke="#2b2222" stroke-width="1.3" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// 所有显示中的产品的平均剩余%（只算有数据的），没有任何数据就返回 null
+function avgPct(map, ids) {
+  let sum = 0, n = 0;
+  ids.forEach((id) => {
+    const a = map[id];
+    const p = a && a.limits && a.limits[0] ? a.limits[0].percent_left : null;
+    if (p != null) { sum += p; n++; }
+  });
+  return n ? Math.round(sum / n) : null;
+}
+
+function renderHair(pct, show) {
+  const box = document.getElementById('hair');
+  if (!box) return;
+  box.hidden = show === false || pct == null;
+  if (box.hidden) return;
+  box.title = t('hairTip', { n: pct });
+  // 已经画过就只切换 class，保留原来的 DOM 节点，CSS 过渡才会播放"掉发"动画
+  const strands = box.querySelectorAll ? box.querySelectorAll('.h') : null;
+  if (strands && strands.length === HAIR_N) {
+    const on = hairSet(pct);
+    strands.forEach((el, i) => el.classList.toggle('off', !on.has(i)));
+    const m = box.querySelector('.m');
+    if (m) m.setAttribute('d', mouthPath(pct));
+  } else {
+    box.innerHTML = hairHead(pct);
+  }
+}
+
 function openLink(id) {
   return `<a href="#" data-open="${id}">${t('openPage')} ↗</a>`;
 }
@@ -275,20 +345,23 @@ function renderSettings(en, prefs) {
   const agents = AGENTS.map((a) =>
     `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
   ).join('');
-  // 两个功能开关（默认都开）：每小时静默自动检查、低额度通知
+  // 功能开关：每小时静默自动检查、低额度通知、发量小人（默认开）；动一动提醒（默认关）
   const toggles = [
-    ['autoRefresh', t('autoCheck'), t('autoCheckTip')],
-    ['notifyLow', t('notifyLow'), t('notifyLowTip')],
-  ].map(([k, label, tip]) =>
-    `<label title="${tip}"><input type="checkbox" data-pref="${k}"${prefs[k] !== false ? ' checked' : ''}>${label}</label>`
-  ).join('');
+    ['autoRefresh', t('autoCheck'), t('autoCheckTip'), true],
+    ['notifyLow', t('notifyLow'), t('notifyLowTip'), true],
+    ['showHair', t('showHair'), t('showHairTip'), true],
+    ['moveReminder', t('moveReminder'), t('moveReminderTip'), false],
+  ].map(([k, label, tip, dflt]) => {
+    const on = prefs[k] == null ? dflt : prefs[k] !== false;
+    return `<label title="${tip}"><input type="checkbox" data-pref="${k}"${on ? ' checked' : ''}>${label}</label>`;
+  }).join('');
   box.innerHTML = `<span class="st">${t('tracked')}</span>${agents}<span class="brk"></span>${toggles}`;
 }
 
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -310,7 +383,8 @@ function render() {
       !(map[id] && rf.started && map[id].scraped_at >= rf.started);
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
-    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow });
+    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, showHair: res.showHair, moveReminder: res.moveReminder });
+    renderHair(avgPct(map, shown), res.showHair);
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
@@ -366,7 +440,7 @@ if (settingsBox) {
       return;
     }
     const pref = el.dataset.pref;
-    if (pref === 'autoRefresh' || pref === 'notifyLow') {
+    if (pref === 'autoRefresh' || pref === 'notifyLow' || pref === 'showHair' || pref === 'moveReminder') {
       chrome.storage.local.set({ [pref]: checked });
     }
   });

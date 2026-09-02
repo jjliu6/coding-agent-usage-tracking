@@ -203,6 +203,34 @@ if (!urls.includes('claude.ai') || !urls.includes('chatgpt.com') || !urls.includ
 }
 if (urls.includes('cursor.com')) problems.push('quiet check must skip unchecked agents');
 
+// 11) 动一动提醒：默认关；打开后 2 小时内烧掉 >10% 才提醒；2 小时冷却；只算重置之后的消耗
+const H = 3600000;
+const T = now + 30 * 86400000; // 远离前面的历史，互不干扰
+const grok = async (pct, t) => { await send(agentData({ id: 'grok-build', scraped_at: t, limits: [{ label: 'Weekly (SuperGrok)', percent_left: pct }] })); await tick(10); };
+const moves = () => notifications.filter((n) => n.id.startsWith('move-'));
+await grok(90, T);
+await grok(78, T + 1 * H); // 掉 12，但 moveReminder 默认关
+if (moves().length !== 0) problems.push('move reminder must be opt-in (no nudge by default)');
+await new Promise((r) => ctxObj.chrome.storage.local.set({ moveReminder: true }, r));
+await grok(75, T + 1.5 * H); // 窗口内 90→75，掉 15 → 提醒
+if (moves().length !== 1 || !moves()[0].title.includes('15%')) {
+  problems.push(`burning 15% in 2h should nudge once, got ${JSON.stringify(moves())}`);
+}
+await grok(60, T + 2 * H); // 冷却中：不再提醒
+if (moves().length !== 1) problems.push('second nudge within the 2h cooldown must be suppressed');
+await grok(58, T + 5 * H); // 窗口 [3h,5h] 里只有这一条 → 数据不够，不提醒
+if (moves().length !== 1) problems.push('a single point in the window is not enough to nudge');
+await grok(100, T + 6.5 * H); // 额度重置
+await grok(88, T + 7 * H); // 窗口 [5h,7h]：58→100 是重置，只算 100→88 = 12 → 提醒
+if (moves().length !== 2) problems.push(`burn after a reset should count from the reset, got ${JSON.stringify(moves())}`);
+if (!moves()[1].message.includes('vibe coding')) problems.push('nudge body should carry the vibe-coding line');
+if (!store.moveNudgedAt || store.moveNudgedAt['grok-build'] !== T + 7 * H) {
+  problems.push(`moveNudgedAt should record the last nudge time, got ${JSON.stringify(store.moveNudgedAt)}`);
+}
+await grok(86, T + 9.5 * H); // 冷却已过，但窗口 [7.5h,9.5h] 里只有这一条
+await grok(82, T + 10 * H); // 窗口 [8h,10h]：86→82 只掉 4，低于阈值
+if (moves().length !== 2) problems.push('a small burn below 10% must not nudge');
+
 if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
@@ -213,4 +241,5 @@ console.log('ok  History dedupe and closeMe behave as before');
 console.log('ok  Badge shows the lowest remaining % across tracked agents');
 console.log('ok  Low-quota notifications fire only on threshold crossings');
 console.log('ok  Hourly quiet check: background tabs only, tracked agents only, toggleable');
+console.log('ok  Move reminder: opt-in, >10% burned in 2h, 2h cooldown, counts from the last reset');
 console.log('\nBackground test passed.');

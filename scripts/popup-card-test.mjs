@@ -66,6 +66,7 @@ const els = {
   grid: el(),
   upd: el(),
   hint: el(),
+  hair: el({ hidden: true }),
 };
 
 const popupCtx = {
@@ -163,8 +164,11 @@ if (!els.settings.innerHTML.includes('data-agent="cursor"')) setProblems.push('s
 if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !== 4) {
   setProblems.push('all four agents should default to checked');
 }
-if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 2) {
-  setProblems.push('autoRefresh and notifyLow toggles should default to checked');
+if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 3) {
+  setProblems.push('autoRefresh, notifyLow and showHair toggles should default to checked');
+}
+if (!els.settings.innerHTML.includes('data-pref="moveReminder">')) {
+  setProblems.push('moveReminder toggle should exist and default to unchecked (opt-in)');
 }
 store.autoRefresh = false;
 ctx.render();
@@ -234,6 +238,30 @@ if (sparkProblems.length) {
   process.exit(1);
 }
 console.log('ok  Card shows a 7-day sparkline once there is enough history');
+
+// --- Hair mascot: strands follow the average remaining % ---
+const hairProblems = [];
+const strandsOn = (html) => (html.match(/class="h"/g) || []).length;
+const strandsOff = (html) => (html.match(/class="h off"/g) || []).length;
+if (strandsOn(ctx.hairHead(100)) !== 24 || strandsOff(ctx.hairHead(100)) !== 0) hairProblems.push('100% should show all 24 strands');
+if (strandsOn(ctx.hairHead(0)) !== 0 || strandsOff(ctx.hairHead(0)) !== 24) hairProblems.push('0% should hide all 24 strands');
+if (strandsOn(ctx.hairHead(50)) !== 12) hairProblems.push('50% should show 12 strands');
+if (!ctx.hairHead(80).includes('Q16 26.5') || !ctx.hairHead(10).includes('Q16 22.5')) hairProblems.push('mouth should smile above 50% and frown below 20%');
+ctx.render(); // grok at 67% is the only agent with data → average 67
+if (els.hair.hidden) hairProblems.push('mascot should be visible by default once there is data');
+if (!els.hair.innerHTML.includes('<svg')) hairProblems.push('mascot should render an SVG head');
+if (!els.hair.title.includes('67%')) hairProblems.push(`mascot tooltip should carry the average 67%, got ${JSON.stringify(els.hair.title)}`);
+if (strandsOn(els.hair.innerHTML) !== 16) hairProblems.push(`67% should show 16 strands, got ${strandsOn(els.hair.innerHTML)}`);
+store.showHair = false;
+ctx.render();
+if (!els.hair.hidden) hairProblems.push('showHair=false should hide the mascot');
+delete store.showHair;
+ctx.render();
+if (hairProblems.length) {
+  console.error(hairProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Hair mascot thins with the average remaining % and can be switched off');
 
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
