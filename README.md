@@ -20,7 +20,7 @@ versioned copy (`coding_agents_usage-<version>.zip`) on the
 several versions around.
 
 **Not a GitHub person?** The same download plus step-by-step install instructions live on the
-[product landing page](https://jjliu6.github.io/coding-agent-usage-tracking/) — send that link to
+[product landing page](https://token-tracking.philosophie.ai/) — send that link to
 anyone who just wants the extension. It shows the same latest version as the button above.
 
 <sub>Want the newest unreleased code instead? Grab the
@@ -113,7 +113,7 @@ that the Download badge above and the in-panel update check both look at.
 ### Landing page
 
 `docs/index.html` is a standalone landing page for people who don't use GitHub:
-<https://jjliu6.github.io/coding-agent-usage-tracking/>. The Landing page workflow
+<https://token-tracking.philosophie.ai/>. The Landing page workflow
 (`.github/workflows/pages.yml`) publishes the `docs/` folder to GitHub Pages on
 every push to `main` that touches it, and again after every successful Release so
 the version baked into the page is current. The page's Download button uses the

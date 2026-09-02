@@ -1,7 +1,7 @@
 name: Landing page
 
 # Publishes docs/ (the product landing page) to GitHub Pages at
-#   https://jjliu6.github.io/coding-agent-usage-tracking/
+#   https://token-tracking.philosophie.ai/
 #
 # It runs:
 #   - on every push to main that touches docs/ (page copy / design changes);
@@ -13,6 +13,8 @@ name: Landing page
 # One-time setup: Settings → Pages → "Build and deployment" → Source:
 # "GitHub Actions". (configure-pages tries to enable that itself on the
 # first run; if it can't, flip the setting by hand and re-run.)
+# The custom domain (token-tracking.philosophie.ai) is set in the same
+# Settings → Pages screen; with a workflow deploy no CNAME file is needed.
 
 on:
   push:
