@@ -24,7 +24,7 @@ it installs the same way, just with a few extra development files in the folder.
 - Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
 - The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
 - When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
-- A tiny **hair mascot** floats on the dashboard, loses hair as your average remaining quota burns down, and can be dragged or left to wander — togglable in settings. Under it, each hair stage offers 2–3 stretch / rest activities: pick one, go do it, then tap Done. Finishing a move grows the hair back (quota cards come back too); keep burning tokens and it thins again. It also regrows at reset.
+- A tiny **hair mascot** floats on the dashboard, loses hair as your average remaining quota burns down, and can be dragged or left to wander — togglable in settings. Under it, each hair stage randomly offers 2–3 stretch / rest activities from a pool of 100: pick one, go do it, then tap Done. Finishing a move grows the hair back (quota cards come back too); keep burning tokens and it thins again. It also regrows at reset.
 - Optional **move reminder** (off by default): when a tracked agent burns more than 10% of its quota within 2 hours, you get a nudge to stand up and touch some grass — at most once every 2 hours per agent. It is a nudge, not a lock: a browser extension can't stop your terminal.
 - An hourly **quiet auto-check** re-scrapes your tracked agents in background tabs without stealing focus (togglable). Pages that won't render in a background tab (can happen with Cursor/Grok) just keep their last data — click Refresh for a guaranteed update.
 - The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
@@ -56,7 +56,7 @@ button on the extension's card in `chrome://extensions`.
 - `agents.js` — shared registry of the four agents (names, colors, usage-page URLs)
 - `background.js` — service worker that coordinates the "Refresh" flow
 - `content.js` — content script that reads usage numbers from each product page
-- `popup.html` / `popup.js` / `i18n.js` — the side-panel dashboard (English / 中文)
+- `popup.html` / `popup.js` / `i18n.js` / `activities.js` — the side-panel dashboard (English / 中文) and the rest/move activity pool
 - `_locales/` — Chrome Store / `chrome://extensions` name and description
 - `icons/` — extension icons
 

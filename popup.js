@@ -317,13 +317,8 @@ function avgPct(map, ids) {
   return n ? Math.round(sum / n) : null;
 }
 
-// 每个发量阶段给 2–3 个活动：选一个去做，点完成后再把卡片细节还回来
+// 每个发量阶段从一大池子里随机抽 2–3 个活动；同一轮提醒里保持不变
 const ACT_SNOOZE_MS = 45 * 60 * 1000;
-const ACTS = {
-  high: ['actStretch', 'actWater', 'actWindow'],
-  mid: ['actStand', 'actSquats', 'actEyes'],
-  low: ['actWalk', 'actGrass', 'actTea'],
-};
 
 function activityStage(pct) {
   if (pct > 50) return 'high';
@@ -332,7 +327,50 @@ function activityStage(pct) {
 }
 
 function activityIds(stage) {
-  return ACTS[stage] || ACTS.high;
+  const pool = (typeof ACTS !== 'undefined' && ACTS[stage]) || [];
+  return pool.slice();
+}
+
+function actLabel(id) {
+  const a = typeof ACT_BY_ID !== 'undefined' ? ACT_BY_ID[id] : null;
+  if (a) return currentLang() === 'zh' ? a.zh : a.en;
+  return t(id);
+}
+
+function shufflePick(ids, n, rnd) {
+  rnd = typeof rnd === 'function' ? rnd : Math.random;
+  n = Math.max(0, Math.min(n, ids.length));
+  const copy = ids.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy.slice(0, n);
+}
+
+function makeActivityOffer(stage, rnd) {
+  rnd = typeof rnd === 'function' ? rnd : Math.random;
+  const pool = activityIds(stage);
+  const n = rnd() < 0.35 ? 2 : 3;
+  return { stage, ids: shufflePick(pool, Math.min(n, pool.length), rnd) };
+}
+
+function offerFits(offer, stage) {
+  const pool = activityIds(stage);
+  if (!offer || offer.stage !== stage || !offer.ids || !offer.ids.length) return false;
+  if (offer.ids.length < 2 || offer.ids.length > 3) return false;
+  return offer.ids.every((id) => pool.indexOf(id) !== -1);
+}
+
+function currentOffer(pct, pick, snoozed, stored) {
+  if (pct == null || snoozed || pick) return stored || null;
+  const stage = activityStage(pct);
+  if (offerFits(stored, stage)) return stored;
+  const offer = makeActivityOffer(stage);
+  chrome.storage.local.set({ activityOffer: offer });
+  return offer;
 }
 
 function actsSnoozed(doneAt, now) {
@@ -365,6 +403,7 @@ function completeActivity() {
       activityPick: null,
       activityDoneAt: Date.now(),
       hairBoostPct: restoreHairBoost(avg),
+      activityOffer: null,
     });
   });
 }
@@ -439,7 +478,7 @@ function initBuddy(pos) {
   }
 }
 
-function renderActs(pct, pick, snoozed) {
+function renderActs(pct, pick, snoozed, offer) {
   const wrap = document.getElementById('acts');
   if (!wrap) return;
   if (snoozed || pct == null) {
@@ -449,21 +488,21 @@ function renderActs(pct, pick, snoozed) {
   }
   wrap.hidden = false;
   if (pick) {
-    wrap.innerHTML = `<p class="ttl">${t('actDoing', { act: t(pick) })}</p><p class="note">${t('actDoingNote')}</p><button type="button" class="done" data-act="done">${t('actDone')}</button>`;
+    wrap.innerHTML = `<p class="ttl">${t('actDoing', { act: actLabel(pick) })}</p><p class="note">${t('actDoingNote')}</p><button type="button" class="done" data-act="done">${t('actDone')}</button>`;
     return;
   }
-  const ids = activityIds(activityStage(pct));
-  const btns = ids.map((id) => `<button type="button" data-act="${id}">${t(id)}</button>`).join('');
+  const ids = (offer && offer.ids) || [];
+  const btns = ids.map((id) => `<button type="button" data-act="${id}">${actLabel(id)}</button>`).join('');
   wrap.innerHTML = `<p class="ttl">${t('actHint')}</p>${btns}`;
 }
 
-function renderBuddy(show, pct, pick, snoozed, pos) {
+function renderBuddy(show, pct, pick, snoozed, pos, offer) {
   const buddy = document.getElementById('buddy');
   if (!buddy) return;
   buddy.hidden = !show;
   if (!show) return;
   initBuddy(pos);
-  renderActs(pct, pick, snoozed);
+  renderActs(pct, pick, snoozed, offer);
 }
 
 function setDetailsHidden(hidden) {
@@ -581,7 +620,7 @@ function renderSettings(en, prefs) {
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'buddyPos', 'hairBoostPct'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'buddyPos', 'hairBoostPct', 'activityOffer'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -613,8 +652,9 @@ function render() {
     const showMascot = res.showHair !== false && pct != null;
     const pick = res.activityPick || null;
     const snoozed = actsSnoozed(res.activityDoneAt);
+    const offer = currentOffer(pct, pick, snoozed, res.activityOffer);
     setDetailsHidden(showMascot && !!pick && !snoozed);
-    renderBuddy(showMascot, pct, pick, snoozed, res.buddyPos);
+    renderBuddy(showMascot, pct, pick, snoozed, res.buddyPos, offer);
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）

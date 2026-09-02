@@ -56,6 +56,7 @@ if (manifest) {
 jsFiles.add('popup.js');
 jsFiles.add('i18n.js');
 jsFiles.add('agents.js');
+jsFiles.add('activities.js');
 if (manifest && !manifest.default_locale) fail('manifest.json is missing default_locale (required for i18n).');
 if (!existsSync(resolve(root, '_locales/en/messages.json'))) fail('Missing _locales/en/messages.json');
 if (!existsSync(resolve(root, '_locales/zh_CN/messages.json'))) fail('Missing _locales/zh_CN/messages.json');

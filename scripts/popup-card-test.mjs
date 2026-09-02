@@ -132,6 +132,7 @@ const popupCtx = {
 
 const ctx = vm.createContext(popupCtx);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), ctx, { filename: 'agents.js' });
+vm.runInContext(readFileSync(resolve(root, 'activities.js'), 'utf8'), ctx, { filename: 'activities.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), ctx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), ctx, { filename: 'popup.js' });
 
@@ -287,36 +288,57 @@ const buddyProblems = [];
 if (ctx.activityStage(80) !== 'high' || ctx.activityStage(20) !== 'mid' || ctx.activityStage(10) !== 'low') {
   buddyProblems.push('activityStage should be high >50, mid >=20, low <20');
 }
-if (JSON.stringify(ctx.activityIds('high')) !== JSON.stringify(['actStretch', 'actWater', 'actWindow'])) {
-  buddyProblems.push('high stage should offer stretch / water / window');
+if (ctx.ACT_LIST.length !== 100) {
+  buddyProblems.push(`activity pool should have 100 items, got ${ctx.ACT_LIST.length}`);
 }
-if (JSON.stringify(ctx.activityIds('mid')) !== JSON.stringify(['actStand', 'actSquats', 'actEyes'])) {
-  buddyProblems.push('mid stage should offer stand / squats / eyes');
+if (new Set(ctx.ACT_LIST.map((a) => a.id)).size !== 100) {
+  buddyProblems.push('activity ids should be unique');
 }
-if (JSON.stringify(ctx.activityIds('low')) !== JSON.stringify(['actWalk', 'actGrass', 'actTea'])) {
-  buddyProblems.push('low stage should offer walk / grass / tea');
+const stageCounts = { high: ctx.activityIds('high').length, mid: ctx.activityIds('mid').length, low: ctx.activityIds('low').length };
+if (stageCounts.high + stageCounts.mid + stageCounts.low !== 100) {
+  buddyProblems.push(`stage pools should cover all 100, got ${JSON.stringify(stageCounts)}`);
+}
+if (stageCounts.high < 30 || stageCounts.mid < 30 || stageCounts.low < 30) {
+  buddyProblems.push(`each stage should have a large pool, got ${JSON.stringify(stageCounts)}`);
+}
+['actStretch', 'actWater', 'actWindow'].forEach((id) => {
+  if (!ctx.activityIds('high').includes(id)) buddyProblems.push(`high pool missing ${id}`);
+});
+['actStand', 'actSquats', 'actEyes'].forEach((id) => {
+  if (!ctx.activityIds('mid').includes(id)) buddyProblems.push(`mid pool missing ${id}`);
+});
+['actWalk', 'actGrass', 'actTea'].forEach((id) => {
+  if (!ctx.activityIds('low').includes(id)) buddyProblems.push(`low pool missing ${id}`);
+});
+const picked = ctx.shufflePick(['a', 'b', 'c', 'd', 'e'], 3, () => 0.2);
+if (picked.length !== 3 || new Set(picked).size !== 3) {
+  buddyProblems.push(`shufflePick should return 3 unique ids, got ${JSON.stringify(picked)}`);
 }
 store.showHair = true;
 delete store.activityPick;
 delete store.activityDoneAt;
+delete store.activityOffer;
 ctx.render();
 if (els.buddy.hidden) buddyProblems.push('floating buddy should show when the mascot is on and there is data');
 if (els.acts.hidden) buddyProblems.push('activity list should show until the user completes one');
-if ((els.acts.innerHTML.match(/<button /g) || []).length !== 3) {
-  buddyProblems.push(`high stage should list 3 activities, got ${els.acts.innerHTML}`);
+const nBtns = (els.acts.innerHTML.match(/<button /g) || []).length;
+if (nBtns < 2 || nBtns > 3) {
+  buddyProblems.push(`should list 2–3 random activities, got ${nBtns} from ${els.acts.innerHTML}`);
 }
-if (!els.acts.innerHTML.includes('Drink a glass of water')) {
-  buddyProblems.push('high-stage copy should include the water activity');
+if (!store.activityOffer || store.activityOffer.stage !== 'high') {
+  buddyProblems.push('first render should persist a high-stage offer');
 }
-if (els.grid.style.display === 'none') {
-  buddyProblems.push('cards should stay visible until the user picks an activity');
+const html1 = els.acts.innerHTML;
+ctx.render();
+if (els.acts.innerHTML !== html1) {
+  buddyProblems.push('re-render should keep the same random offer');
 }
-store.activityPick = 'actWater';
+store.activityPick = store.activityOffer.ids[0];
 ctx.render();
 if (els.grid.style.display !== 'none') {
   buddyProblems.push('picking an activity should hide the dashboard cards');
 }
-if (!els.acts.innerHTML.includes('Doing: Drink a glass of water')) {
+if (!els.acts.innerHTML.includes('Doing:')) {
   buddyProblems.push(`doing state should name the pick, got ${els.acts.innerHTML}`);
 }
 if (!els.acts.innerHTML.includes('data-act="done"')) {
@@ -332,9 +354,14 @@ if (!els.acts.hidden) {
   buddyProblems.push('completing an activity should dismiss the reminder');
 }
 store.activityDoneAt = Date.now() - (ctx.ACT_SNOOZE_MS + 1000);
+store.activityOffer = null;
 ctx.render();
 if (els.acts.hidden) {
   buddyProblems.push('after the snooze window the 2–3 activities should come back');
+}
+const nBtns2 = (els.acts.innerHTML.match(/<button /g) || []).length;
+if (nBtns2 < 2 || nBtns2 > 3) {
+  buddyProblems.push(`after snooze should list 2–3 new activities, got ${nBtns2}`);
 }
 store.showHair = false;
 store.activityPick = 'actWater';
@@ -347,12 +374,13 @@ if (els.grid.style.display === 'none') {
 delete store.showHair;
 delete store.activityPick;
 delete store.activityDoneAt;
+delete store.activityOffer;
 ctx.render();
 if (buddyProblems.length) {
   console.error(buddyProblems.join('\n'));
   process.exit(1);
 }
-console.log('ok  Floating buddy lists 3 stage activities; pick hides cards, Done restores them');
+console.log('ok  Floating buddy lists 2–3 random activities from a pool of 100; pick hides cards, Done restores them');
 
 // --- Completing a move grows the hair back ---
 const growProblems = [];
@@ -371,6 +399,7 @@ if (store.hairBoostPct !== 33) {
   growProblems.push(`complete at 67% remaining should set boost 33, got ${store.hairBoostPct}`);
 }
 if (store.activityPick != null) growProblems.push('complete should clear the pick');
+if (store.activityOffer != null) growProblems.push('complete should clear the offer so the next round shuffles again');
 ctx.render();
 if (strandsOn(els.hair.innerHTML) !== 24) {
   growProblems.push(`after Done, hair should be full (24), got ${strandsOn(els.hair.innerHTML)}`);
@@ -548,6 +577,7 @@ const reloadCtxObj = {
 };
 const reloadCtx = vm.createContext(reloadCtxObj);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), reloadCtx, { filename: 'agents.js' });
+vm.runInContext(readFileSync(resolve(root, 'activities.js'), 'utf8'), reloadCtx, { filename: 'activities.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), reloadCtx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), reloadCtx, { filename: 'popup.js' });
 if (reloadCtx.currentLang() !== 'zh') {
