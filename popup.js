@@ -302,20 +302,44 @@ function renderSettings(en, prefs) {
   const agents = AGENTS.map((a) =>
     `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
   ).join('');
-  // 两个功能开关（默认都开）：每小时静默自动检查、低额度通知
+  // 三个功能开关（默认都开）：每小时静默自动检查、低额度通知、每天检查更新
   const toggles = [
     ['autoRefresh', t('autoCheck'), t('autoCheckTip')],
     ['notifyLow', t('notifyLow'), t('notifyLowTip')],
+    ['checkUpdates', t('checkUpdates'), t('checkUpdatesTip')],
   ].map(([k, label, tip]) =>
     `<label title="${tip}"><input type="checkbox" data-pref="${k}"${prefs[k] !== false ? ' checked' : ''}>${label}</label>`
   ).join('');
   box.innerHTML = `<span class="st">${t('tracked')}</span>${agents}<span class="brk"></span>${toggles}`;
 }
 
+// 面板底部的版本行：
+// - 平时：  "v1.2.1"（点开是 GitHub 的发布列表）
+// - 查过了：  "v1.2.1 · up to date"
+// - 有新版：  "v1.2.1 · New version v1.3.0 available — download ↗"（橙色，链到下载页）
+// 版本号读自 manifest（update.js 的 currentVersion），不在这里手写。
+function versionLine(info) {
+  const cur = currentVersion();
+  if (!cur) return '';
+  const link = (href, cls, text) =>
+    `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"${cls ? ` class="${cls}"` : ''}>${text}</a>`;
+  const me = `<a href="${esc(UPDATE_PAGE)}" target="_blank" rel="noopener noreferrer" title="${esc(t('versionTitle'))}">v${esc(cur)}</a>`;
+  if (updateAvailable(info, cur)) {
+    return `${me} · ${link(info.url || UPDATE_PAGE, 'new', esc(t('updateAvail', { v: 'v' + info.latest })))}`;
+  }
+  if (info && info.latest) return `${me} · ${esc(t('upToDate'))}`;
+  return me;
+}
+
+function renderVersion(info) {
+  const el = document.getElementById('ver');
+  if (el) el.innerHTML = versionLine(info);
+}
+
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'checkUpdates', 'updateCheck'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -340,7 +364,8 @@ function render() {
     };
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
-    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow });
+    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, checkUpdates: res.checkUpdates });
+    renderVersion(res.checkUpdates === false ? null : res.updateCheck);
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
@@ -396,7 +421,7 @@ if (settingsBox) {
       return;
     }
     const pref = el.dataset.pref;
-    if (pref === 'autoRefresh' || pref === 'notifyLow') {
+    if (pref === 'autoRefresh' || pref === 'notifyLow' || pref === 'checkUpdates') {
       chrome.storage.local.set({ [pref]: checked });
     }
   });

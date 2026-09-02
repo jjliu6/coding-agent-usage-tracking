@@ -66,6 +66,7 @@ const els = {
   grid: el(),
   upd: el(),
   hint: el(),
+  ver: el(),
 };
 
 const popupCtx = {
@@ -97,6 +98,7 @@ const popupCtx = {
       sendMessage: (msg) => { sent.push(msg); },
       getContexts: () => Promise.resolve([]),
       getURL: (p) => p,
+      getManifest: () => ({ version: '1.2.1' }),
       lastError: null,
     },
     sidePanel: { open: ({ windowId }) => { sideOpened++; popupCtx._openedWindowId = windowId; return Promise.resolve(); } },
@@ -117,6 +119,7 @@ const popupCtx = {
 
 const ctx = vm.createContext(popupCtx);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), ctx, { filename: 'agents.js' });
+vm.runInContext(readFileSync(resolve(root, 'update.js'), 'utf8'), ctx, { filename: 'update.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), ctx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), ctx, { filename: 'popup.js' });
 
@@ -166,9 +169,10 @@ if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !
 if (!els.settings.innerHTML.includes('data-agent="grok-bot"') || !els.settings.innerHTML.includes('data-agent="gemini"')) {
   setProblems.push('settings should list Grok Bot and Gemini');
 }
-if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 2) {
-  setProblems.push('autoRefresh and notifyLow toggles should default to checked');
+if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 3) {
+  setProblems.push('autoRefresh, notifyLow and checkUpdates toggles should default to checked');
 }
+if (!els.settings.innerHTML.includes('data-pref="checkUpdates"')) setProblems.push('settings should have a checkUpdates toggle');
 store.autoRefresh = false;
 ctx.render();
 if (els.settings.innerHTML.includes('data-pref="autoRefresh" checked')) {
@@ -194,6 +198,54 @@ if (setProblems.length) {
   process.exit(1);
 }
 console.log('ok  Tracked-agents settings: default all on, unchecked agent disappears');
+
+// --- Version line at the bottom ---
+const verProblems = [];
+delete store.updateCheck;
+delete store.checkUpdates;
+ctx.render();
+if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push(`version line should show the manifest version, got ${els.ver.innerHTML}`);
+if (!els.ver.innerHTML.includes('github.com/jjliu6/coding-agent-usage-tracking/releases')) verProblems.push('version should link to the releases page');
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('no check yet → must not claim a new version');
+if (els.ver.innerHTML.includes('up to date')) verProblems.push('no check yet → must not claim up to date');
+store.updateCheck = { checkedAt: Date.now(), latest: '1.2.1', url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.2.1' };
+ctx.render();
+if (!els.ver.innerHTML.includes('up to date')) verProblems.push(`same version → "up to date", got ${els.ver.innerHTML}`);
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('same version → no new-version link');
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.3.0' };
+ctx.render();
+if (!els.ver.innerHTML.includes('class="new"') || !els.ver.innerHTML.includes('New version v1.3.0 available')) {
+  verProblems.push(`newer release → orange download link, got ${els.ver.innerHTML}`);
+}
+if (!els.ver.innerHTML.includes('href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.3.0"')) {
+  verProblems.push('new-version link should point at that release');
+}
+if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('installed version stays visible next to the update notice');
+// 用户已经更新到 1.3.0 但存的还是上次的检查结果 → 不该再提示
+store.updateCheck = { checkedAt: Date.now(), latest: '1.2.0', url: 'https://github.com/x' };
+ctx.render();
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('latest older than installed → no update notice');
+// 关掉"检查更新"后，即使还有旧结果也不显示提示
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: 'https://github.com/x' };
+store.checkUpdates = false;
+ctx.render();
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('checkUpdates=false → no update notice');
+if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('checkUpdates=false → version itself still shown');
+if (els.settings.innerHTML.includes('data-pref="checkUpdates" checked')) verProblems.push('checkUpdates=false should render unchecked');
+// 存的 url 不是 GitHub 也只会转义、不执行
+store.checkUpdates = true;
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: '"><img src=x onerror=alert(1)>' };
+ctx.render();
+if (els.ver.innerHTML.includes('<img')) verProblems.push('update url must be escaped');
+delete store.updateCheck;
+delete store.checkUpdates;
+ctx.render();
+if (verProblems.length) {
+  console.error(els.ver.innerHTML);
+  console.error(verProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Version line shows the installed version and flags a newer release');
 
 // --- Failure state on cards ---
 const failProblems = [];
@@ -395,6 +447,7 @@ const els2 = {
   grid: el(),
   upd: el(),
   hint: el(),
+  ver: el(),
 };
 const reloadCtxObj = {
   chrome: {
@@ -417,6 +470,7 @@ const reloadCtxObj = {
       sendMessage: noop,
       getContexts: () => Promise.resolve([]),
       getURL: (p) => p,
+      getManifest: () => ({ version: '1.2.1' }),
       lastError: null,
     },
     sidePanel: { open: () => Promise.resolve() },
@@ -432,6 +486,7 @@ const reloadCtxObj = {
 };
 const reloadCtx = vm.createContext(reloadCtxObj);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), reloadCtx, { filename: 'agents.js' });
+vm.runInContext(readFileSync(resolve(root, 'update.js'), 'utf8'), reloadCtx, { filename: 'update.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), reloadCtx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), reloadCtx, { filename: 'popup.js' });
 if (reloadCtx.currentLang() !== 'zh') {
