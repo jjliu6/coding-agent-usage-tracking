@@ -239,13 +239,13 @@ function hairHead(pct) {
   for (let i = 0; i < HAIR_N; i++) {
     // 头顶 195°→345° 这段弧上均匀分布；长短交替一下更像头发
     const a = (195 + i * (150 / (HAIR_N - 1))) * Math.PI / 180;
-    const len = i % 2 ? 6 : 4.5;
+    const len = i % 2 ? 8.5 : 6.5;
     const x1 = (cx + r * Math.cos(a)).toFixed(1), y1 = (cy + r * Math.sin(a)).toFixed(1);
     const x2 = (cx + (r + len) * Math.cos(a)).toFixed(1), y2 = (cy + (r + len) * Math.sin(a)).toFixed(1);
     strands += `<line class="h${on.has(i) ? '' : ' off'}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
   }
   return `<svg viewBox="0 0 32 32" aria-hidden="true">
-    <g stroke="#b8895c" stroke-width="1.6" stroke-linecap="round">${strands}</g>
+    <g stroke="#b8895c" stroke-width="2.2" stroke-linecap="round">${strands}</g>
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="#e9c4a0"/>
     <circle cx="12.5" cy="19" r="1.2" fill="#2b2222"/><circle cx="19.5" cy="19" r="1.2" fill="#2b2222"/>
     <path class="m" d="${mouthPath(pct)}" fill="none" stroke="#2b2222" stroke-width="1.3" stroke-linecap="round"/>
@@ -276,8 +276,13 @@ function renderHair(pct, show) {
     strands.forEach((el, i) => el.classList.toggle('off', !on.has(i)));
     const m = box.querySelector('.m');
     if (m) m.setAttribute('d', mouthPath(pct));
+    const b = box.querySelector('.hl b');
+    if (b) b.textContent = pct + '%';
+    const lab = box.querySelector('.hl i');
+    if (lab) lab.textContent = t('hairLabel');
   } else {
-    box.innerHTML = hairHead(pct);
+    // 小人旁边直接写"发量 32%"，不用靠鼠标悬停才知道是什么
+    box.innerHTML = hairHead(pct) + `<span class="hl"><b>${pct}%</b><i>${t('hairLabel')}</i></span>`;
   }
 }
 

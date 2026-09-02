@@ -11,8 +11,11 @@
   .brand .s{color:#8fe3c6}
   .left{display:flex;align-items:center;gap:8px;min-width:0}
   /* 发量小人：头发根数随平均剩余额度变化；掉发用 CSS 过渡做动画 */
-  .mascot{display:inline-flex;align-items:center;cursor:default;flex:0 0 auto}
-  .mascot svg{display:block;width:30px;height:30px;overflow:visible}
+  .mascot{display:inline-flex;align-items:center;gap:6px;cursor:default;flex:0 0 auto;margin-left:4px}
+  .mascot svg{display:block;width:46px;height:46px;overflow:visible}
+  .mascot .hl{display:flex;flex-direction:column;line-height:1.1}
+  .mascot .hl b{font-size:14px;color:var(--ink)}
+  .mascot .hl i{font-style:normal;font-size:9px;letter-spacing:.08em;color:var(--muted)}
   .mascot .h{transition:opacity .7s ease,transform .7s ease}
   .mascot .h.off{opacity:0;transform:translateY(7px) rotate(14deg)}
   .right{display:flex;align-items:center;gap:10px}
