@@ -1,4 +1,4 @@
-// 四个产品的统一注册表，background（importScripts）和 popup（<script>）共用。
+// 所有产品的统一注册表，background（importScripts）和 popup（<script>）共用。
 // - page:   给用户手动打开的额度页
 // - scrape: Refresh 时后台打开的抓取页（带 cawrefresh 标记，抓完自动关）
 // - foreground: 重页面（后台标签页会被浏览器冻结），刷新时需要短暂切到前台
@@ -37,5 +37,23 @@ const AGENTS = [
       'https://cursor.com/dashboard/spending?cawrefresh=1',
     ],
     foreground: true,
+  },
+  {
+    // Grok Bot 的额度和 Cursor 在同一个 spending 页上（"Grok Bot › Weekly usage"），
+    // 抓取 URL 与 Cursor 重复，background 会去重、只开一次页
+    id: 'grok-bot',
+    name: 'Grok Bot',
+    color: '#F49AC1',
+    page: 'https://cursor.com/dashboard/spending',
+    scrape: ['https://cursor.com/dashboard/spending?cawrefresh=1'],
+    foreground: true,
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    color: '#3B78E7',
+    page: 'https://gemini.google.com/usage',
+    scrape: ['https://gemini.google.com/usage?cawrefresh=1'],
+    foreground: false,
   },
 ];

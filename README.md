@@ -1,9 +1,9 @@
 # coding-agent-usage-tracking
 
 A Chrome (Manifest V3) browser extension that shows your remaining usage for
-**Claude Code, Codex, Grok Build and Cursor** at a glance — in one popup.
+**Claude Code, Codex, Grok Build, Cursor, Grok Bot and Gemini** at a glance — in one popup.
 
-![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, and Cursor](docs/dashboard.webp)
+![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, Cursor, Grok Bot, and Gemini](docs/dashboard.webp)
 
 <sub>Example popup with sample data.</sub>
 
@@ -20,7 +20,12 @@ it installs the same way, just with a few extra development files in the folder.
 
 ## What it does
 
-- One click shows the remaining weekly / short-term quota for all four agents, and when each one resets.
+- One click shows the remaining weekly / short-term quota for all six agents, and when each one resets.
+- **Grok Bot** (the weekly Grok Bot quota included in a Cursor plan) gets its own card. It lives on the same
+  `cursor.com/dashboard/spending` page as the Cursor quota, so one scrape fills both cards. If your Cursor
+  plan has no Grok Bot section, the card says so — untick it in ⚙ to hide it.
+- **Gemini** reads `gemini.google.com/usage`: the weekly limit is the main ring, the short-term "Current usage"
+  window is the bar below it.
 - Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
 - The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
 - When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
@@ -51,7 +56,7 @@ button on the extension's card in `chrome://extensions`.
 ## Files
 
 - `manifest.json` — extension manifest (Manifest V3)
-- `agents.js` — shared registry of the four agents (names, colors, usage-page URLs)
+- `agents.js` — shared registry of the six agents (names, colors, usage-page URLs)
 - `background.js` — service worker that coordinates the "Refresh" flow
 - `content.js` — content script that reads usage numbers from each product page
 - `popup.html` / `popup.js` / `i18n.js` — the side-panel dashboard (English / 中文)
@@ -84,7 +89,7 @@ workflow can also be run manually from the Actions tab.
 
 ## Disclaimer
 
-Unofficial and not affiliated with Anthropic, OpenAI, xAI, or Cursor. It only
+Unofficial and not affiliated with Anthropic, OpenAI, xAI, Cursor, or Google. It only
 reads usage numbers already shown on each product's own page.
 
 ---
