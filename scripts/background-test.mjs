@@ -201,7 +201,41 @@ const urls = quiet.map((o) => o.url).join(' ');
 if (!urls.includes('claude.ai') || !urls.includes('chatgpt.com') || !urls.includes('grok.com')) {
   problems.push(`quiet check should cover all enabled agents, got ${urls}`);
 }
-if (urls.includes('cursor.com')) problems.push('quiet check must skip unchecked agents');
+// cursor 取消勾选 → 它自己的 usage 页不开；但 grok-bot 还勾着，共用的 spending 页仍要开
+if (urls.includes('cursor.com/dashboard/usage')) problems.push('quiet check must skip unchecked agents');
+if (!urls.includes('cursor.com/dashboard/spending')) problems.push('quiet check should still open the spending page for Grok Bot');
+if (!urls.includes('gemini.google.com')) problems.push('quiet check should include Gemini');
+
+// 11) Cursor 和 Grok Bot 共用 spending 页：勾选全部时同一 URL 只开一次
+await new Promise((r) => ctxObj.chrome.storage.local.set({ enabledAgents: {} }, r));
+await tick(10);
+const before2 = createdTabs.length;
+alarms.listener({ name: 'quietRefresh' });
+await tick(15);
+const all = createdTabs.slice(before2).map((o) => o.url);
+const spending = all.filter((u) => u.startsWith('https://cursor.com/dashboard/spending'));
+if (spending.length !== 1) problems.push(`shared spending page should open once, got ${JSON.stringify(all)}`);
+if (!all.some((u) => u.startsWith('https://cursor.com/dashboard/usage'))) problems.push('cursor usage page should still open');
+
+// 12) 手动 Refresh：也去重；Cursor 抓到、Grok Bot 没抓到 → grok-bot 标为 missing（不是 fail）
+// 假标签页一打开就"抓完关掉"，整轮刷新几毫秒就结束；所以先把 cursor/gemini 的数据
+// 用"未来"的 scraped_at 写好，模拟这一轮抓到了它们，其它产品没抓到
+const before3 = createdTabs.length;
+const t0 = Date.now();
+await send(agentData({ id: 'cursor', scraped_at: t0 + 60000, limits: [{ label: 'Cursor Models', percent_left: 30 }] }));
+await send(agentData({ id: 'gemini', scraped_at: t0 + 60000, limits: [{ label: 'Weekly', percent_left: 90 }] }));
+await send(agentData({ id: 'codex', scraped_at: t0 - 60000, limits: [{ label: 'Weekly', percent_left: 60 }] }));
+await send(agentData({ id: 'grok-build', scraped_at: t0 - 60000, limits: [{ label: 'Weekly (SuperGrok)', percent_left: 60 }] }));
+onMessage({ type: 'refreshAll' }, {}, () => {});
+await tick(80);
+const manual = createdTabs.slice(before3).map((o) => o.url);
+if (manual.filter((u) => u.startsWith('https://cursor.com/dashboard/spending')).length !== 1) {
+  problems.push(`manual refresh should open the spending page once, got ${JSON.stringify(manual)}`);
+}
+const rr = store.refresh && store.refresh.results;
+if (!rr || rr.cursor !== 'ok' || rr.gemini !== 'ok') problems.push(`refresh results should mark cursor/gemini ok, got ${JSON.stringify(rr)}`);
+if (!rr || rr['grok-bot'] !== 'missing') problems.push(`grok-bot should be 'missing' when cursor was read but no Grok Bot section, got ${JSON.stringify(rr)}`);
+if (!rr || rr['grok-build'] !== 'fail') problems.push(`an agent whose page never reported should stay 'fail', got ${JSON.stringify(rr)}`);
 
 if (problems.length) {
   console.error(problems.join('\n'));
@@ -213,4 +247,5 @@ console.log('ok  History dedupe and closeMe behave as before');
 console.log('ok  Badge shows the lowest remaining % across tracked agents');
 console.log('ok  Low-quota notifications fire only on threshold crossings');
 console.log('ok  Hourly quiet check: background tabs only, tracked agents only, toggleable');
+console.log('ok  Cursor + Grok Bot share one spending-page scrape; missing Grok Bot section is flagged, not failed');
 console.log('\nBackground test passed.');

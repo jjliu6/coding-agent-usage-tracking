@@ -1,5 +1,7 @@
-// 在 4 个 usage 页面上运行：把页面上的数字抠下来，存起来。
+// 在各产品的 usage 页面上运行：把页面上的数字抠下来，存起来。
 // 只有真的认出数字才存，普通页面不动。
+// 一个页面可能对应多个产品（Cursor 的 spending 页同时有 Cursor 和 Grok Bot），
+// 所以 makeAgents 返回数组；waiting=true 表示页上还有区块没渲染完、先别关页。
 
 function num(s) {
   if (s == null) return null;
@@ -29,44 +31,59 @@ function deepText(root) {
   return out;
 }
 
-function makeAgent() {
+function makeAgents() {
   const T = (document.body.innerText || '') + '\n' + deepText(document.body);
   const h = location.hostname;
   const g = (re) => { const m = T.match(re); return m ? m[1].trim() : null; };
   const pct = (re) => { const m = T.match(re); return m ? parseInt(m[1], 10) : null; };
+  const one = (a) => ({ agents: a ? [a] : [], waiting: false });
 
   if (h.includes('claude.ai')) {
     const wu = pct(/All models[\s\S]{0,60}?(\d+)%\s*used/i);
-    if (wu == null) return null;
+    if (wu == null) return one(null);
     const su = pct(/Current session[\s\S]{0,60}?(\d+)%\s*used/i);
     const limits = [{ label: 'Weekly (All models)', percent_left: 100 - wu, resets_text: g(/All models[\s\S]{0,120}?Resets\s+([^\n]+)/i) }];
     if (su != null) limits.push({ label: 'Session (5h)', percent_left: 100 - su, resets_text: g(/Current session[\s\S]{0,90}?Resets\s+([^\n]+)/i) });
-    return { id: 'claude-code', name: 'Claude Code', color: '#D97757', limits };
+    return one({ id: 'claude-code', name: 'Claude Code', color: '#D97757', limits });
   }
 
   if (h.includes('chatgpt.com')) {
     const wk = pct(/Weekly usage limit[\s\S]{0,40}?(\d+)%\s*remaining/i);
-    if (wk == null) return null;
+    if (wk == null) return one(null);
     const fh = pct(/5[\s-]?hour usage limit[\s\S]{0,40}?(\d+)%\s*remaining/i);
     const limits = [{ label: 'Weekly', percent_left: wk, resets_text: null }];
     if (fh != null) limits.push({ label: '5-hour limit', percent_left: fh, resets_text: g(/Resets\s+(\d{1,2}:\d{2}\s*[AP]M)/i) });
-    return { id: 'codex', name: 'Codex', color: '#5CD6B3', limits, credits: g(/Credits remaining[\s\S]{0,20}?(\d[\d,]*)/i) };
+    return one({ id: 'codex', name: 'Codex', color: '#5CD6B3', limits, credits: g(/Credits remaining[\s\S]{0,20}?(\d[\d,]*)/i) });
   }
 
   if (h.includes('grok.com')) {
     const parsed = parseGrokUsage(T);
-    if (!parsed) return null;
-    return { id: 'grok-build', name: 'Grok Build', color: '#B78CF0',
+    if (!parsed) return one(null);
+    return one({ id: 'grok-build', name: 'Grok Build', color: '#B78CF0',
       limits: [{ label: 'Weekly (SuperGrok)', percent_left: 100 - parsed.used, resets_text: parsed.reset }],
-      breakdown: parsed.breakdown };
+      breakdown: parsed.breakdown });
+  }
+
+  // gemini.google.com/usage："Weekly limit / Resets Sep 6 at 8:29 AM / 0% used"
+  // 和 "Current usage / 0% used / Resets at 2:29 PM"。Weekly 是主额度。
+  if (h.includes('gemini.google.com')) {
+    const wk = pct(/Weekly limit[\s\S]{0,80}?(\d+)%\s*used/i);
+    if (wk == null) return one(null);
+    const limits = [{ label: 'Weekly', percent_left: 100 - wk, resets_text: g(/Weekly limit[\s\S]{0,40}?Resets\s+(?:at\s+)?([^\n]+)/i) }];
+    // "Current usage" 后面的 Resets 只能取本区块的，别越界抓到 Weekly 的那行
+    const cu = pct(/Current usage(?:(?!Weekly)[\s\S]){0,40}?(\d+)%\s*used/i);
+    if (cu != null) limits.push({ label: 'Current usage', percent_left: 100 - cu, resets_text: g(/Current usage(?:(?!Weekly)[\s\S]){0,80}?Resets\s+(?:at\s+)?([^\n]+)/i) });
+    const plan = g(/Usage limits\s+([A-Z][A-Za-z]{1,10})\s*\n/);
+    return one({ id: 'gemini', name: 'Gemini', color: '#3B78E7', limits, plan });
   }
 
   if (h.includes('cursor.com')) {
+    const out = [];
     const a = { id: 'cursor', name: 'Cursor', color: '#6E9BF5' };
     const cm = pct(/Cursor Models[\s\S]{0,90}?(\d+)%\s*used/i);
     if (cm != null) {
       const om = pct(/Other Models[\s\S]{0,60}?(\d+)%\s*used/i);
-      const resets = g(/Usage limits reset on\s+([^\n(]+)/i), dl = g(/(\d+)\s*days? left/i);
+      const resets = g(/Usage limits reset on\s+([^\n(]+)/i), dl = g(/Usage limits reset on[^\n]*?(\d+)\s*days? left/i);
       const rt = resets ? resets + (dl ? ` (${dl} days)` : '') : null;
       a.limits = [{ label: 'Cursor Models', percent_left: 100 - cm, resets_text: rt }];
       if (om != null) a.limits.push({ label: 'Other Models', percent_left: 100 - om, resets_text: rt });
@@ -80,10 +97,19 @@ function makeAgent() {
         on_demand: num(g(/On-demand[\s\S]{0,25}?([\d.]+\s*[KMB万]?|0)/i)),
       };
     }
-    if (!a.limits && !a.tokens) return null;
-    return a;
+    if (a.limits || a.tokens) out.push(a);
+
+    // 同一页下面的 "Grok Bot › Weekly usage · 13% used · Resets 9月3日 (23 hours and 4 minutes left)"
+    // 区块标题已经出现但百分比还没渲染 → waiting，等它出来再关页
+    const gbHead = /Grok Bot[\s\S]{0,120}?Weekly usage/i.test(T);
+    const gb = pct(/Grok Bot[\s\S]{0,120}?Weekly usage[\s\S]{0,60}?(\d+)%\s*used/i);
+    if (gb != null) {
+      out.push({ id: 'grok-bot', name: 'Grok Bot', color: '#F49AC1',
+        limits: [{ label: 'Weekly', percent_left: 100 - gb, resets_text: g(/Grok Bot[\s\S]{0,300}?Resets\s+([^\n]+)/i) }] });
+    }
+    return { agents: out, waiting: gbHead && gb == null };
   }
-  return null;
+  return one(null);
 }
 
 // 抓到的数据发给 background 统一写入。多个抓取标签页可能同时完成，
@@ -111,7 +137,8 @@ function closeIfAuto() {
 // 最多等 60 秒，兼顾慢加载和后台标签页被浏览器降速的情况。
 // Grok 的大数字会从 0 往上滚，第一次匹配到的 "N% used" 往往是动画中间值，
 // 所以同一读数要稳住一小会儿才存。
-let done = false, iv = null, obs = null;
+let done = false, closing = false, inflight = 0, iv = null, obs = null;
+const saved = {};
 let grokHold = { sig: '', t: 0 };
 function grokStable(a) {
   const pct = a.limits && a.limits[0] ? a.limits[0].percent_left : '';
@@ -124,19 +151,36 @@ function grokStable(a) {
   return now - grokHold.t >= 1200;
 }
 function finish() { if (obs) obs.disconnect(); if (iv) clearInterval(iv); }
+// 所有该存的都存完、并且 background 都收到了，才关掉自动打开的页
+function maybeClose() {
+  if (!done || inflight > 0 || closing) return;
+  closing = true;
+  closeIfAuto();
+}
 function tryOnce() {
   if (done) return;
-  const a = makeAgent();
-  if (!a) return;
-  if (a.id === 'grok-build' && !grokStable(a)) return;
+  const r = makeAgents();
+  let pending = !!r.waiting;
+  r.agents.forEach((a) => {
+    if (saved[a.id]) return; // 每个产品只存一次
+    if (a.id === 'grok-build' && !grokStable(a)) { pending = true; return; }
+    saved[a.id] = true;
+    inflight++;
+    save(a, () => { inflight--; maybeClose(); });
+  });
+  if (pending || !Object.keys(saved).length) return;
   done = true;
   finish();
-  save(a, closeIfAuto);
+  maybeClose();
 }
 tryOnce();
 if (!done) {
   obs = new MutationObserver(tryOnce);
   obs.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
   let n = 0;
-  iv = setInterval(() => { n++; tryOnce(); if (!done && n > 30) { finish(); closeIfAuto(); } }, 2000);
+  iv = setInterval(() => {
+    n++;
+    tryOnce();
+    if (!done && n > 30) { done = true; finish(); maybeClose(); }
+  }, 2000);
 }
