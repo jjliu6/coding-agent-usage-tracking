@@ -5,7 +5,7 @@
 // - 只刷新用户在面板里勾选的产品（enabledAgents，缺省全开）。
 // - 刷新结束后按 agent 记录成/败（refresh.results），面板据此提示"没抓到，可能未登录"。
 
-importScripts('agents.js', 'i18n.js');
+importScripts('agents.js', 'i18n.js', 'update.js');
 
 let refreshing = false;
 
@@ -63,18 +63,67 @@ async function runQuietRefresh() {
   await Promise.all(uniqueUrls(list).map((u) => openAndWait(u, false, 25000)));
 }
 
+// 每天检查一次有没有新版本（checkUpdates，默认开）：向 GitHub 的公开 API 问一句
+// "最新 Release 是哪个版本"，结果存进 updateCheck，面板底部据此显示"有新版本 ↗"。
+// 只请求 GitHub、不带任何账号或用量数据。关掉开关就清掉闹钟和已存的结果。
+function syncUpdateAlarm() {
+  if (!chrome.alarms) return;
+  chrome.storage.local.get(['checkUpdates'], (res) => {
+    if (res.checkUpdates !== false) chrome.alarms.create('updateCheck', { periodInMinutes: UPDATE_INTERVAL_MS / 60000 });
+    else chrome.alarms.clear('updateCheck', () => void chrome.runtime.lastError);
+  });
+}
+
+// force=false 时只在"上次查过了一天以上"才真的发请求：service worker 每次被唤醒都会
+// 跑到这里，不能每次都去撞网络。失败（断网、限流）就记下 failedAt，最少一小时后再试。
+async function checkForUpdate(force) {
+  if (typeof fetch !== 'function') return;
+  const res = await getLocal(['checkUpdates', 'updateCheck']);
+  if (res.checkUpdates === false) return;
+  const prev = res.updateCheck || {};
+  const now = Date.now();
+  if (!force) {
+    if (prev.checkedAt && now - prev.checkedAt < UPDATE_INTERVAL_MS) return;
+    if (prev.failedAt && now - prev.failedAt < UPDATE_RETRY_MS) return;
+  }
+  try {
+    const r = await fetch(UPDATE_API, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const body = await r.json();
+    const latest = parseVersionTag(body && body.tag_name);
+    if (!latest) throw new Error('no version tag in response');
+    const url = (body && typeof body.html_url === 'string' && /^https:\/\/github\.com\//.test(body.html_url)) ? body.html_url : UPDATE_PAGE;
+    chrome.storage.local.set({ updateCheck: { checkedAt: now, latest, url } });
+  } catch (e) {
+    // 保留上次查到的结果（有新版的提示不该因为一次断网就消失），只记一下失败时间
+    chrome.storage.local.set({ updateCheck: Object.assign({}, prev, { failedAt: now }) });
+  }
+}
+
 if (chrome.alarms) {
-  chrome.alarms.onAlarm.addListener((al) => { if (al && al.name === 'quietRefresh') runQuietRefresh(); });
+  chrome.alarms.onAlarm.addListener((al) => {
+    if (!al) return;
+    if (al.name === 'quietRefresh') runQuietRefresh();
+    if (al.name === 'updateCheck') checkForUpdate(true);
+  });
 }
 
 chrome.storage.onChanged.addListener((ch, area) => {
   if (area !== 'local' || !ch) return;
   if (ch.agents || ch.enabledAgents) updateBadge();
   if (ch.autoRefresh) syncAlarm();
+  if (ch.checkUpdates) {
+    syncUpdateAlarm();
+    // 关掉：把结果也清掉，面板上不再显示；打开：马上查一次
+    if (ch.checkUpdates.newValue === false) chrome.storage.local.remove('updateCheck', () => void chrome.runtime.lastError);
+    else checkForUpdate(true);
+  }
 });
 
 syncAlarm();
 updateBadge();
+syncUpdateAlarm();
+checkForUpdate(false);
 
 function setRefresh(partial) {
   chrome.storage.local.get(['refresh'], (res) => {
