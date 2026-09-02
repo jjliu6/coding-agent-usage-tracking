@@ -211,34 +211,59 @@ function ring(pct, color) {
   </svg>`;
 }
 
-// ---- 发量小人（程序员们的头发量）----
-// 把"平均剩余额度"画成一个小脑袋：额度越少头发越少，额度重置时头发长回来。
-// 头发是 24 个固定的圆形发团，用 class="off" 隐藏，配合 CSS 过渡就有"掉发"动画。
+// ---- 发量：画一个会谢顶的人，不是色块拼图 ----
+// 24 缕是手摆的头发，从脑顶先掉、刘海最后掉，看起来像发际线往后推。
 const HAIR_N = 24;
-const HAIR_FILL = '#ffd36a';
-// 发团铺在头顶，再被 clip 成一顶蘑菇头。用圆团而不是竖条，稀疏时才像头发。
-const HAIR_PUFFS = [
-  [36, 12, 9.2], [26, 15, 8.4], [46, 15, 8.4], [36, 20, 8.8],
-  [20, 22, 7.6], [52, 22, 7.6], [28, 22, 7.4], [44, 22, 7.4],
-  [16, 30, 6.8], [56, 30, 6.8], [24, 28, 7.0], [48, 28, 7.0],
-  [36, 26, 7.6], [30, 16, 7.2], [42, 16, 7.2], [36, 8, 6.4],
-  [22, 34, 6.6], [32, 32, 7.0], [40, 32, 7.0], [50, 34, 6.6],
-  [27, 36, 5.8], [36, 35, 6.2], [45, 36, 5.8], [40, 7, 4.2],
-];
-const HAIR_CAP = 'M16 39C14 28 17.5 16 26.5 11.5C30.5 8.6 33.4 7.2 36 7Q37 2.4 39.4 6.8C43 7.1 48.2 9 52.5 13.4C58.2 18.6 60 28.4 56.8 39C50.8 35.2 43.4 33.8 36 34.6C28.6 33.8 21.2 35.2 16 39Z';
+const HAIR_FILL = '#c9842c';
+const HAIR_EDGE = '#7a4a14';
 
-// 剩余 pct 时哪几根头发还在。(k*7)%24 是一个打乱后的固定顺序（7 和 24 互质，
-// 所以 k=0..23 恰好走遍每一根），这样掉发是"东一根西一根"，不是从一边整齐剃过去。
+// 每一缕：[根x, 根y, 控制点x, 控制点y, 梢x, 梢y, 宽度]
+// 0–7 刘海（最后掉）  8–15 两侧  16–23 头顶（最先掉）
+const HAIR_LOCKS = [
+  [29, 41, 27, 49, 27, 55, 4.0],
+  [33, 39, 32, 49, 31, 56, 4.2],
+  [37, 38, 37, 49, 36, 57, 4.4],
+  [43, 38, 43, 49, 44, 57, 4.4],
+  [47, 39, 48, 49, 49, 56, 4.2],
+  [51, 41, 53, 49, 53, 55, 4.0],
+  [35, 40, 34, 48, 33, 54, 3.6],
+  [45, 40, 46, 48, 47, 54, 3.6],
+  [22, 44, 18, 48, 17, 56, 3.8],
+  [20, 40, 15, 42, 14, 50, 3.8],
+  [21, 35, 16, 34, 14, 40, 4.0],
+  [25, 32, 20, 30, 17, 34, 4.0],
+  [58, 44, 62, 48, 63, 56, 3.8],
+  [60, 40, 65, 42, 66, 50, 3.8],
+  [59, 35, 64, 34, 66, 40, 4.0],
+  [55, 32, 60, 30, 63, 34, 4.0],
+  [30, 30, 28, 22, 26, 18, 5.2],
+  [35, 28, 34, 20, 33, 16, 5.4],
+  [40, 27, 40, 19, 40, 15, 5.6],
+  [45, 28, 46, 20, 47, 16, 5.4],
+  [50, 30, 52, 22, 54, 18, 5.2],
+  [37, 29, 36, 21, 35, 17, 4.6],
+  [43, 29, 44, 21, 45, 17, 4.6],
+  [40, 31, 40, 24, 40, 19, 5.0],
+];
+
 function hairSet(pct) {
   const shown = Math.round(Math.max(0, Math.min(100, pct == null ? 0 : pct)) / 100 * HAIR_N);
   const on = new Set();
-  for (let k = 0; k < shown; k++) on.add((k * 7) % HAIR_N);
+  for (let k = 0; k < shown; k++) on.add(k);
   return on;
 }
 
+function hairLockPath(x0, y0, cx, cy, x1, y1, w) {
+  const dx = x1 - x0, dy = y1 - y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const px = -dy / len * w, py = dx / len * w;
+  const n = (v) => v.toFixed(1);
+  return `M${n(x0)} ${n(y0)} Q${n(cx + px)} ${n(cy + py)} ${n(x1)} ${n(y1)} Q${n(cx - px)} ${n(cy - py)} ${n(x0)} ${n(y0)} Z`;
+}
+
 function hairLockEl(i, visible) {
-  const [cx, cy, r] = HAIR_PUFFS[i];
-  return `<circle class="h${visible ? '' : ' off'}" cx="${cx}" cy="${cy}" r="${r}" fill="${HAIR_FILL}"/>`;
+  const [x0, y0, cx, cy, x1, y1, w] = HAIR_LOCKS[i];
+  return `<path class="h${visible ? '' : ' off'}" data-i="${i}" d="${hairLockPath(x0, y0, cx, cy, x1, y1, w)}" fill="${HAIR_FILL}" stroke="${HAIR_EDGE}" stroke-width="1.05" stroke-linejoin="round"/>`;
 }
 
 function mouthMood(pct) {
@@ -247,43 +272,36 @@ function mouthMood(pct) {
   return 'frown';
 }
 
-// 嘴巴跟着心情走：>50 微笑，20–50 面无表情，<20 哭丧脸
 function mouthPath(pct) {
-  if (pct > 50) return 'M28 53.2 Q36 59 44 53.2';
-  if (pct >= 20) return 'M29.5 54.2 H42.5';
-  return 'M29 55.4 Q36 51.2 43 55.4';
+  if (pct > 50) return 'M33 62 Q40 67.5 47 62';
+  if (pct >= 20) return 'M34 63 H46';
+  return 'M33 64.2 Q40 60.2 47 64.2';
 }
 
 function faceMarkup(pct) {
   const mood = mouthMood(pct);
-  const blush = '<ellipse cx="23.5" cy="50.2" rx="4.6" ry="2.3" fill="#f4a090" opacity=".55"/><ellipse cx="48.5" cy="50.2" rx="4.6" ry="2.3" fill="#f4a090" opacity=".55"/>';
-  let eyes;
-  if (mood === 'smile') {
-    eyes = '<path d="M24 44.6 Q28.2 40.2 32.4 44.6" fill="none" stroke="#2b2420" stroke-width="2.3" stroke-linecap="round"/><path d="M39.6 44.6 Q43.8 40.2 48 44.6" fill="none" stroke="#2b2420" stroke-width="2.3" stroke-linecap="round"/>';
-  } else if (mood === 'flat') {
-    eyes = '<ellipse cx="27.4" cy="44.4" rx="3.5" ry="4.3" fill="#2b2420"/><ellipse cx="44.6" cy="44.4" rx="3.5" ry="4.3" fill="#2b2420"/><circle cx="26.3" cy="43" r="1.15" fill="#fff"/><circle cx="43.5" cy="43" r="1.15" fill="#fff"/>';
-  } else {
-    eyes = '<path d="M23.6 39.8 Q27.4 38.4 31.2 40.6" fill="none" stroke="#2b2420" stroke-width="1.6" stroke-linecap="round"/><path d="M48.4 39.8 Q44.6 38.4 40.8 40.6" fill="none" stroke="#2b2420" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="27.4" cy="45" rx="3.2" ry="3.6" fill="#2b2420"/><ellipse cx="44.6" cy="45" rx="3.2" ry="3.6" fill="#2b2420"/><circle cx="26.4" cy="43.8" r=".95" fill="#fff"/><circle cx="43.6" cy="43.8" r=".95" fill="#fff"/>';
-  }
-  return `${blush}${eyes}<path class="m" data-mood="${mood}" d="${mouthPath(pct)}" fill="none" stroke="#2b2420" stroke-width="2.15" stroke-linecap="round"/>`;
+  const brows = mood === 'frown'
+    ? '<path d="M27 48.2 Q31 46.6 35 48.6" fill="none" stroke="#3a2a20" stroke-width="1.6" stroke-linecap="round"/><path d="M53 48.2 Q49 46.6 45 48.6" fill="none" stroke="#3a2a20" stroke-width="1.6" stroke-linecap="round"/>'
+    : '<path d="M27 48 Q31 46.4 35 48.2" fill="none" stroke="#3a2a20" stroke-width="1.55" stroke-linecap="round"/><path d="M53 48 Q49 46.4 45 48.2" fill="none" stroke="#3a2a20" stroke-width="1.55" stroke-linecap="round"/>';
+  const eyes = '<ellipse cx="31" cy="53.2" rx="4.1" ry="4.8" fill="#fff"/><ellipse cx="49" cy="53.2" rx="4.1" ry="4.8" fill="#fff"/><ellipse cx="31.4" cy="53.6" rx="2.3" ry="2.7" fill="#3a2416"/><ellipse cx="49.4" cy="53.6" rx="2.3" ry="2.7" fill="#3a2416"/><circle cx="30.4" cy="52.2" r="1" fill="#fff"/><circle cx="48.4" cy="52.2" r="1" fill="#fff"/>';
+  return `${brows}${eyes}<ellipse cx="24.5" cy="58.5" rx="4.2" ry="2.1" fill="#f0a090" opacity=".45"/><ellipse cx="55.5" cy="58.5" rx="4.2" ry="2.1" fill="#f0a090" opacity=".45"/><path d="M39.2 57.6 Q40 59.2 40.8 57.6" fill="none" stroke="#d4a07a" stroke-width="1.3" stroke-linecap="round"/><path class="m" data-mood="${mood}" d="${mouthPath(pct)}" fill="none" stroke="#3a2a20" stroke-width="2.1" stroke-linecap="round"/>`;
 }
 
-let hairClipSeq = 0;
 function hairHead(pct) {
   const on = hairSet(pct);
-  let strands = '';
-  for (let i = 0; i < HAIR_N; i++) strands += hairLockEl(i, on.has(i));
-  const clipId = 'hc' + (++hairClipSeq);
-  return `<svg viewBox="0 0 72 80" aria-hidden="true">
-    <defs><clipPath id="${clipId}"><path d="${HAIR_CAP}"/></clipPath></defs>
-    <path d="M24 65C24 58.5 29 56 36 60C43 56 48 58.5 48 65L46.5 80H25.5Z" fill="#5ccf9e" stroke="#2f9a74" stroke-width="1.8" stroke-linejoin="round"/>
-    <path d="M31.5 66C33 70 39 70 40.5 66" fill="none" stroke="#2f9a74" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M31 60.5h10v8H31z" fill="#ffcba8"/>
-    <ellipse cx="17.2" cy="44" rx="4.8" ry="6.6" fill="#ffcba8" stroke="#d48958" stroke-width="1.8"/>
-    <ellipse cx="54.8" cy="44" rx="4.8" ry="6.6" fill="#ffcba8" stroke="#d48958" stroke-width="1.8"/>
-    <ellipse cx="36" cy="44" rx="20.2" ry="21.2" fill="#ffcba8" stroke="#d48958" stroke-width="2.1"/>
-    <ellipse cx="36" cy="32.5" rx="8.5" ry="4" fill="#fff" opacity=".26"/>
-    <g class="locks" clip-path="url(#${clipId})">${strands}</g>
+  let locks = '';
+  for (let i = 16; i < HAIR_N; i++) locks += hairLockEl(i, on.has(i));
+  for (let i = 8; i < 16; i++) locks += hairLockEl(i, on.has(i));
+  for (let i = 0; i < 8; i++) locks += hairLockEl(i, on.has(i));
+  return `<svg viewBox="0 0 80 96" aria-hidden="true">
+    <path d="M26 76 C26 70 31 68 40 72 C49 68 54 70 54 76 L52 96 H28 Z" fill="#3d4654" stroke="#2a303a" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M34 78 C36 83 44 83 46 78" fill="none" stroke="#2a303a" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M35 71 h10 v9 H35 Z" fill="#f3c29a"/>
+    <ellipse cx="20" cy="52" rx="5.2" ry="7.2" fill="#f3c29a" stroke="#c47a4a" stroke-width="1.8"/>
+    <ellipse cx="60" cy="52" rx="5.2" ry="7.2" fill="#f3c29a" stroke="#c47a4a" stroke-width="1.8"/>
+    <ellipse cx="40" cy="52" rx="22" ry="23" fill="#f3c29a" stroke="#c47a4a" stroke-width="2.15"/>
+    <ellipse cx="40" cy="40" rx="9" ry="4.2" fill="#fff" opacity=".22"/>
+    <g class="locks">${locks}</g>
     <g class="face">${faceMarkup(pct)}</g>
   </svg>`;
 }
@@ -309,7 +327,7 @@ function renderHair(pct, show) {
   const strands = box.querySelectorAll ? box.querySelectorAll('.h') : null;
   if (strands && strands.length === HAIR_N) {
     const on = hairSet(pct);
-    strands.forEach((el, i) => el.classList.toggle('off', !on.has(i)));
+    strands.forEach((el) => el.classList.toggle('off', !on.has(+el.dataset.i)));
     const face = box.querySelector('.face');
     if (face) face.innerHTML = faceMarkup(pct);
     const m = box.querySelector('.m');
