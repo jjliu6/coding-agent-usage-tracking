@@ -80,6 +80,8 @@ const els = {
   hair: el({ hidden: true }),
   buddy: el({ hidden: true }),
   acts: el({ hidden: true }),
+  ver: el(),
+  credits: el(),
 };
 
 const popupCtx = {
@@ -111,6 +113,7 @@ const popupCtx = {
       sendMessage: (msg) => { sent.push(msg); },
       getContexts: () => Promise.resolve([]),
       getURL: (p) => p,
+      getManifest: () => ({ version: '1.2.1' }),
       lastError: null,
     },
     sidePanel: { open: ({ windowId }) => { sideOpened++; popupCtx._openedWindowId = windowId; return Promise.resolve(); } },
@@ -135,6 +138,7 @@ const popupCtx = {
 const ctx = vm.createContext(popupCtx);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), ctx, { filename: 'agents.js' });
 vm.runInContext(readFileSync(resolve(root, 'activities.js'), 'utf8'), ctx, { filename: 'activities.js' });
+vm.runInContext(readFileSync(resolve(root, 'update.js'), 'utf8'), ctx, { filename: 'update.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), ctx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), ctx, { filename: 'popup.js' });
 
@@ -178,15 +182,19 @@ console.log('ok  Grok card shows 67% remaining with Chat/Build/Auto/Img slices')
 const setProblems = [];
 if (!els.settings.innerHTML.includes('Claude Code')) setProblems.push('settings should list Claude Code');
 if (!els.settings.innerHTML.includes('data-agent="cursor"')) setProblems.push('settings should have a cursor checkbox');
-if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !== 4) {
-  setProblems.push('all four agents should default to checked');
+if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !== 6) {
+  setProblems.push('all six agents should default to checked');
 }
-if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 3) {
-  setProblems.push('autoRefresh, notifyLow and showHair toggles should default to checked');
+if (!els.settings.innerHTML.includes('data-agent="grok-bot"') || !els.settings.innerHTML.includes('data-agent="gemini"')) {
+  setProblems.push('settings should list Grok Bot and Gemini');
+}
+if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 4) {
+  setProblems.push('autoRefresh, notifyLow, showHair and checkUpdates toggles should default to checked');
 }
 if (!els.settings.innerHTML.includes('data-pref="moveReminder">')) {
   setProblems.push('moveReminder toggle should exist and default to unchecked (opt-in)');
 }
+if (!els.settings.innerHTML.includes('data-pref="checkUpdates"')) setProblems.push('settings should have a checkUpdates toggle');
 store.autoRefresh = false;
 ctx.render();
 if (els.settings.innerHTML.includes('data-pref="autoRefresh" checked')) {
@@ -213,6 +221,58 @@ if (setProblems.length) {
 }
 console.log('ok  Tracked-agents settings: default all on, unchecked agent disappears');
 
+// --- Version line at the bottom ---
+const verProblems = [];
+delete store.updateCheck;
+delete store.checkUpdates;
+ctx.render();
+if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push(`version line should show the manifest version, got ${els.ver.innerHTML}`);
+if (!els.ver.innerHTML.includes('github.com/jjliu6/coding-agent-usage-tracking/releases')) verProblems.push('version should link to the releases page');
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('no check yet → must not claim a new version');
+if (els.ver.innerHTML.includes('up to date')) verProblems.push('no check yet → must not claim up to date');
+store.updateCheck = { checkedAt: Date.now(), latest: '1.2.1', url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.2.1' };
+ctx.render();
+if (!els.ver.innerHTML.includes('up to date')) verProblems.push(`same version → "up to date", got ${els.ver.innerHTML}`);
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('same version → no new-version link');
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.3.0' };
+ctx.render();
+if (!els.ver.innerHTML.includes('class="new"') || !els.ver.innerHTML.includes('New version v1.3.0 available')) {
+  verProblems.push(`newer release → orange download link, got ${els.ver.innerHTML}`);
+}
+if (!els.ver.innerHTML.includes('href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.3.0"')) {
+  verProblems.push('new-version link should point at that release');
+}
+if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('installed version stays visible next to the update notice');
+// 用户已经更新到 1.3.0 但存的还是上次的检查结果 → 不该再提示
+store.updateCheck = { checkedAt: Date.now(), latest: '1.2.0', url: 'https://github.com/x' };
+ctx.render();
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('latest older than installed → no update notice');
+// 关掉"检查更新"后，即使还有旧结果也不显示提示
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: 'https://github.com/x' };
+store.checkUpdates = false;
+ctx.render();
+if (els.ver.innerHTML.includes('class="new"')) verProblems.push('checkUpdates=false → no update notice');
+if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('checkUpdates=false → version itself still shown');
+if (els.settings.innerHTML.includes('data-pref="checkUpdates" checked')) verProblems.push('checkUpdates=false should render unchecked');
+// 存的 url 不是 GitHub 也只会转义、不执行
+store.checkUpdates = true;
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: '"><img src=x onerror=alert(1)>' };
+ctx.render();
+if (els.ver.innerHTML.includes('<img')) verProblems.push('update url must be escaped');
+if (!els.credits.innerHTML.includes('Built by') || !els.credits.innerHTML.includes('Junjie Liu') || !els.credits.innerHTML.includes('Philosophie AI')) {
+  verProblems.push(`footer credits should name the author, got ${els.credits.innerHTML}`);
+}
+if (els.credits.innerHTML.includes('credits {n}')) verProblems.push('footer must not use the card credits template');
+delete store.updateCheck;
+delete store.checkUpdates;
+ctx.render();
+if (verProblems.length) {
+  console.error(els.ver.innerHTML);
+  console.error(verProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Version line shows the installed version and flags a newer release');
+
 // --- Failure state on cards ---
 const failProblems = [];
 const failHtml = ctx.card('grok-build', grok, [], true);
@@ -229,7 +289,62 @@ if (failProblems.length) {
   console.error(failProblems.join('\n'));
   process.exit(1);
 }
+const missingHtml = ctx.card('grok-bot', undefined, [], 'missing');
+if (!missingHtml.includes('no Grok Bot section')) failProblems.push('missing Grok Bot section should get its own hint');
+if (missingHtml.includes("couldn't read this page")) failProblems.push('missing section must not be reported as a sign-in problem');
+store.refresh = { running: false, started: Date.now(), finished: Date.now(), results: { 'grok-bot': 'missing' } };
+ctx.render();
+if (!els.grid.innerHTML.includes('no Grok Bot section')) failProblems.push('render should surface the missing-section hint');
+store.refresh = {};
+ctx.render();
+if (failProblems.length) {
+  console.error(failProblems.join('\n'));
+  process.exit(1);
+}
 console.log('ok  Failed refresh is visible on the card with an "open page" link');
+console.log('ok  Grok Bot section missing from the Cursor page shows a dedicated hint');
+
+// --- Grok Bot and Gemini cards ---
+const newCards = [];
+const bot = {
+  id: 'grok-bot', name: 'Grok Bot', scraped_at: Date.now(),
+  limits: [{ label: 'Weekly', percent_left: 87, resets_text: '9月3日 (23 hours and 4 minutes left)' }],
+};
+const botHtml = ctx.card('grok-bot', bot, [], false);
+if (!botHtml.includes('>87%</b>')) newCards.push('Grok Bot card should show 87% remaining');
+if (!botHtml.includes('reset in 23h')) newCards.push(`Grok Bot card should say "reset in 23h", got: ${botHtml}`);
+if (!botHtml.includes('>Weekly<')) newCards.push('Grok Bot card should label the ring Weekly');
+const gem = {
+  id: 'gemini', name: 'Gemini', scraped_at: Date.now(), plan: 'PRO',
+  limits: [
+    { label: 'Weekly', percent_left: 83, resets_text: 'Sep 6 at 8:29 AM' },
+    { label: 'Current usage', percent_left: 58, resets_text: '2:29 PM' },
+  ],
+};
+const gemHtml = ctx.card('gemini', gem, [], false);
+if (!gemHtml.includes('>83%</b>')) newCards.push('Gemini card should show 83% remaining');
+if (!gemHtml.includes('Current usage') || !gemHtml.includes('58% left')) newCards.push('Gemini card should show the Current usage bar with 58% left');
+if (!gemHtml.includes('>PRO<')) newCards.push('Gemini card should show the PRO plan');
+if (!/reset in \d+[dh]/.test(gemHtml)) newCards.push(`Gemini weekly reset "Sep 6 at 8:29 AM" should parse to a countdown, got: ${gemHtml}`);
+// parseReset: the two new formats
+const now0 = new Date('2026-09-02T12:00:00');
+const r1 = ctx.parseReset('9月3日 (23 hours and 4 minutes left)', now0);
+if (!r1 || Math.round((r1 - now0) / 60000) !== 23 * 60 + 4) newCards.push(`"23 hours and 4 minutes left" should be +23h04m, got ${r1}`);
+const r2 = ctx.parseReset('2 days left', now0);
+if (!r2 || Math.round((r2 - now0) / 3600000) !== 48) newCards.push(`"2 days left" should be +48h, got ${r2}`);
+const r3 = ctx.parseReset('Sep 6 at 8:29 AM', now0);
+if (!r3 || r3.getMonth() !== 8 || r3.getDate() !== 6 || r3.getHours() !== 8 || r3.getMinutes() !== 29 || r3.getFullYear() !== 2026) {
+  newCards.push(`"Sep 6 at 8:29 AM" should be Sep 6 2026 08:29, got ${r3}`);
+}
+const r4 = ctx.parseReset('Jan 3 at 8:29 AM', new Date('2026-12-30T12:00:00'));
+if (!r4 || r4.getFullYear() !== 2027) newCards.push(`"Jan 3" seen in late December should roll into next year, got ${r4}`);
+const r5 = ctx.parseReset('9月26日 (24 days)', now0);
+if (!r5 || Math.round((r5 - now0) / 86400000) !== 24) newCards.push(`Cursor "(24 days)" format must still work, got ${r5}`);
+if (newCards.length) {
+  console.error(newCards.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Grok Bot and Gemini cards render with parsed reset countdowns');
 
 // --- 7-day sparkline ---
 const sparkProblems = [];
@@ -550,6 +665,7 @@ const els2 = {
   grid: el(),
   upd: el(),
   hint: el(),
+  ver: el(),
 };
 const reloadCtxObj = {
   chrome: {
@@ -572,6 +688,7 @@ const reloadCtxObj = {
       sendMessage: noop,
       getContexts: () => Promise.resolve([]),
       getURL: (p) => p,
+      getManifest: () => ({ version: '1.2.1' }),
       lastError: null,
     },
     sidePanel: { open: () => Promise.resolve() },
@@ -591,6 +708,7 @@ const reloadCtxObj = {
 const reloadCtx = vm.createContext(reloadCtxObj);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), reloadCtx, { filename: 'agents.js' });
 vm.runInContext(readFileSync(resolve(root, 'activities.js'), 'utf8'), reloadCtx, { filename: 'activities.js' });
+vm.runInContext(readFileSync(resolve(root, 'update.js'), 'utf8'), reloadCtx, { filename: 'update.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), reloadCtx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), reloadCtx, { filename: 'popup.js' });
 if (reloadCtx.currentLang() !== 'zh') {

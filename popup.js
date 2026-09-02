@@ -33,6 +33,14 @@ function parseReset(txt, now) {
   let m;
   // "(31 days)" 这种直接给了天数（Cursor）
   if ((m = t.match(/\((\d+)\s*days?\)/i))) { const d = new Date(now); d.setDate(d.getDate() + +m[1]); return d; }
+  // "23 hours and 4 minutes left" / "2 days left"（Cursor 的 Grok Bot）
+  if (/\bleft\b/i.test(t)) {
+    const d = new Date(now); let hit = false, mm;
+    if ((mm = t.match(/(\d+)\s*days?/i))) { d.setDate(d.getDate() + +mm[1]); hit = true; }
+    if ((mm = t.match(/(\d+)\s*hours?/i))) { d.setHours(d.getHours() + +mm[1]); hit = true; }
+    if ((mm = t.match(/(\d+)\s*min/i))) { d.setMinutes(d.getMinutes() + +mm[1]); hit = true; }
+    if (hit) return d;
+  }
   // "in 1 hr 58 min" / "in 2 days"（Claude 会话）
   if ((m = t.match(/^in\s+(.+)/i))) {
     const d = new Date(now), s = m[1]; let mm;
@@ -51,6 +59,15 @@ function parseReset(txt, now) {
   if (/\d{4}/.test(t) && /[A-Za-z]{3,}/.test(t)) {
     const d = new Date(t.replace(/\s+at\s+/i, ' '));
     if (!isNaN(d.getTime())) return d;
+  }
+  // "Sep 6 at 8:29 AM"（月 日 + 时间，没有年份 —— Gemini）
+  if ((m = t.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:\s+at\s+|,?\s+)(\d{1,2}):(\d{2})\s*([AP]M)?$/i))) {
+    // now 可能是时间戳数字，也可能是 Date，先统一成 Date 再取年份
+    const d = new Date(`${m[1]} ${m[2]}, ${new Date(now).getFullYear()} ${m[3]}:${m[4]} ${m[5] || ''}`);
+    if (!isNaN(d.getTime())) {
+      if (d < now - 86400000) d.setFullYear(d.getFullYear() + 1); // 跨年：12月看到 "Jan 3"
+      return d;
+    }
   }
   // "Sat 5:00 PM"（星期几 + 时间）
   if ((m = t.match(/(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\s+(\d{1,2}):(\d{2})\s*([AP]M)?/i))) {
@@ -118,6 +135,10 @@ function logo(id, c) {
   if (id === 'codex') return `<svg width="20" height="20" fill="none" stroke="${c}" stroke-width="1.6"><polygon points="10,3 16,6.5 16,13.5 10,17 4,13.5 4,6.5"/><circle cx="10" cy="10" r="2.2"/></svg>`;
   if (id === 'grok-build') return `<svg width="20" height="20" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="13" height="13" rx="4"/><line x1="7.5" y1="12.5" x2="12.5" y2="7.5"/></svg>`;
   if (id === 'cursor') return `<svg width="20" height="20" fill="${c}"><path d="M6 4 L15 10 L10.6 11 L13 15.6 L11 16.6 L8.6 12 L6 15 Z"/></svg>`;
+  // 小机器人头：圆角矩形 + 两只眼睛 + 天线
+  if (id === 'grok-bot') return `<svg width="20" height="20" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="6" width="13" height="10" rx="3"/><line x1="10" y1="3" x2="10" y2="6"/><circle cx="7.5" cy="11" r="1.1" fill="${c}" stroke="none"/><circle cx="12.5" cy="11" r="1.1" fill="${c}" stroke="none"/></svg>`;
+  // 四角星
+  if (id === 'gemini') return `<svg width="20" height="20" fill="${c}"><path d="M10 2 C10 6.4 13.6 10 18 10 C13.6 10 10 13.6 10 18 C10 13.6 6.4 10 2 10 C6.4 10 10 6.4 10 2 Z"/></svg>`;
   return `<span style="width:10px;height:10px;border-radius:3px;background:${c};display:inline-block"></span>`;
 }
 
@@ -150,6 +171,8 @@ const LIMIT_KEYS = {
   'Weekly 额度 (SuperGrok)': 'weeklyGrok',
   'Cursor Models': 'cursorModels',
   'Other Models': 'otherModels',
+  'Current usage': 'currentUsage',
+  当前用量: 'currentUsage',
   'This period': 'thisPeriod',
   本周期: 'thisPeriod',
 };
@@ -581,13 +604,17 @@ function openLink(id) {
   return `<a href="#" data-open="${id}">${t('openPage')} ↗</a>`;
 }
 
+function failText(fail) {
+  return fail === 'missing' ? t('sectionMissing') : t('fetchFailed');
+}
+
 function card(id, a, hist, fail) {
   const meta = META[id];
   if (!a) {
     return `<div class="card">
       <div class="chead"><div class="name">${logo(id, meta.color)}${meta.name}</div></div>
       <div class="empty">${t('empty')} ${openLink(id)}</div>
-      ${fail ? `<div class="fail">⚠ ${t('fetchFailed')}</div>` : ''}
+      ${fail ? `<div class="fail">⚠ ${failText(fail)}</div>` : ''}
     </div>`;
   }
   const L = a.limits || [], p0 = L[0], p1 = L[1];
@@ -613,7 +640,7 @@ function card(id, a, hist, fail) {
   let burn = '';
   if (est) burn = `<div style="font-size:10.5px;margin-top:9px;color:${est.color}">🔥 ${est.text}</div>`;
   const failLine = fail
-    ? `<div class="fail">⚠ ${t('fetchFailed')} ${openLink(id)}</div>`
+    ? `<div class="fail">⚠ ${failText(fail)} ${openLink(id)}</div>`
     : '';
 
   return `<div class="card">
@@ -641,11 +668,12 @@ function renderSettings(en, prefs) {
   const agents = AGENTS.map((a) =>
     `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
   ).join('');
-  // 功能开关：每小时静默自动检查、低额度通知、发量小人（默认开）；动一动提醒（默认关）
+  // 功能开关：每小时静默自动检查、低额度通知、发量小人、每天检查更新（默认开）；动一动提醒（默认关）
   const toggles = [
     ['autoRefresh', t('autoCheck'), t('autoCheckTip'), true],
     ['notifyLow', t('notifyLow'), t('notifyLowTip'), true],
     ['showHair', t('showHair'), t('showHairTip'), true],
+    ['checkUpdates', t('checkUpdates'), t('checkUpdatesTip'), true],
     ['moveReminder', t('moveReminder'), t('moveReminderTip'), false],
   ].map(([k, label, tip, dflt]) => {
     const on = prefs[k] == null ? dflt : prefs[k] !== false;
@@ -654,10 +682,51 @@ function renderSettings(en, prefs) {
   box.innerHTML = `<span class="st">${t('tracked')}</span>${agents}<span class="brk"></span>${toggles}`;
 }
 
+// 面板底部的版本行：
+// - 平时：  "v1.2.1"（点开是 GitHub 的发布列表）
+// - 查过了：  "v1.2.1 · up to date"
+// - 有新版：  "v1.2.1 · New version v1.3.0 available — download ↗"（橙色，链到下载页）
+// 版本号读自 manifest（update.js 的 currentVersion），不在这里手写。
+function versionLine(info) {
+  const cur = currentVersion();
+  if (!cur) return '';
+  const link = (href, cls, text) =>
+    `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"${cls ? ` class="${cls}"` : ''}>${text}</a>`;
+  const me = `<a href="${esc(UPDATE_PAGE)}" target="_blank" rel="noopener noreferrer" title="${esc(t('versionTitle'))}">v${esc(cur)}</a>`;
+  if (updateAvailable(info, cur)) {
+    return `${me} · ${link(info.url || UPDATE_PAGE, 'new', esc(t('updateAvail', { v: 'v' + info.latest })))}`;
+  }
+  if (info && info.latest) return `${me} · ${esc(t('upToDate'))}`;
+  return me;
+}
+
+function renderVersion(info) {
+  const el = document.getElementById('ver');
+  if (el) el.innerHTML = versionLine(info);
+}
+
+// 面板最底部的小字：作者 / 协议 / 源码链接 + 免责声明。跟版本行一样在每次 render() 时重画，
+// 这样切换中英文后文字会跟着变。链接文字来自 i18n，URL 写死在这里。
+function creditsLine() {
+  const link = (href, text) =>
+    `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
+  const line = t('builtBy', {
+    name: link('https://x.com/jjl13579', 'Junjie Liu'),
+    org: link('https://philosophie.ai', 'Philosophie AI'),
+    src: link('https://github.com/' + UPDATE_REPO, t('creditsSrc')),
+  });
+  return `${line}<br>${esc(t('disclaimer'))}`;
+}
+
+function renderCredits() {
+  const el = document.getElementById('credits');
+  if (el) el.innerHTML = creditsLine();
+}
+
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'lastMovedAt', 'buddyPos', 'hairBoostPct', 'activityOffer'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'lastMovedAt', 'buddyPos', 'hairBoostPct', 'activityOffer', 'checkUpdates', 'updateCheck'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -674,12 +743,15 @@ function render() {
       clearTimeout(staleTimer);
       staleTimer = setTimeout(render, STALE_MS - (Date.now() - rf.started) + 1000);
     }
-    // 上一轮 Refresh 没抓到、且之后也没有更新的数据 → 卡片上提示失败
-    const failed = (id) => !running && rf.results && rf.results[id] === 'fail' &&
-      !(map[id] && rf.started && map[id].scraped_at >= rf.started);
+    // 上一轮 Refresh 没抓到（'fail'）或页面里没这个区块（'missing'）、且之后也没有更新的数据 → 卡片上提示
+    const failed = (id) => {
+      const st = !running && rf.results && rf.results[id];
+      if (st !== 'fail' && st !== 'missing') return false;
+      return (map[id] && rf.started && map[id].scraped_at >= rf.started) ? false : st;
+    };
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
-    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, showHair: res.showHair, moveReminder: res.moveReminder });
+    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, showHair: res.showHair, moveReminder: res.moveReminder, checkUpdates: res.checkUpdates });
     const pct = avgPct(map, shown);
     const boost = clampHairBoost(pct, res.hairBoostPct);
     if (pct != null && (res.hairBoostPct || 0) !== boost) {
@@ -698,6 +770,8 @@ function render() {
     const offer = due ? currentOffer(pct, pick, false, res.activityOffer) : null;
     setVeil(showMascot && due);
     renderBuddy(showMascot, pct, pick, due, res.buddyPos, offer);
+    renderVersion(res.checkUpdates === false ? null : res.updateCheck);
+    renderCredits();
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
@@ -753,7 +827,7 @@ if (settingsBox) {
       return;
     }
     const pref = el.dataset.pref;
-    if (pref === 'autoRefresh' || pref === 'notifyLow' || pref === 'showHair' || pref === 'moveReminder') {
+    if (pref === 'autoRefresh' || pref === 'notifyLow' || pref === 'showHair' || pref === 'moveReminder' || pref === 'checkUpdates') {
       chrome.storage.local.set({ [pref]: checked });
     }
   });

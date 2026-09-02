@@ -1,18 +1,27 @@
 # coding-agent-usage-tracking
 
 A Chrome (Manifest V3) browser extension that shows your remaining usage for
-**Claude Code, Codex, Grok Build and Cursor** at a glance — in one popup.
+**Claude Code, Codex, Grok Build, Cursor, Grok Bot and Gemini** at a glance — in one popup.
 
-![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, and Cursor](docs/dashboard.webp)
+![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, Cursor, Grok Bot, and Gemini](docs/dashboard.webp)
 
 <sub>Example popup with sample data.</sub>
 
 ## Download
 
-[![Download the extension (.zip)](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Chrome%20extension%20(.zip)-1a73e8?style=for-the-badge)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)
+[![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/coding-agent-usage-tracking?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)
+[![Total downloads](https://img.shields.io/github/downloads/jjliu6/coding-agent-usage-tracking/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/coding-agent-usage-tracking/releases)
 
-No GitHub account, no git, no build step — [download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip),
-unzip it, and load the folder in Chrome. See [Install](#install) below.
+The version on the button is the one you get. No GitHub account, no git, no build step —
+[download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip),
+unzip it, and load the folder in Chrome. See [Install](#install) below. Every release also ships a
+versioned copy (`coding_agents_usage-<version>.zip`) on the
+[releases page](https://github.com/jjliu6/coding-agent-usage-tracking/releases) if you want to keep
+several versions around.
+
+**Not a GitHub person?** The same download plus step-by-step install instructions live on the
+[product landing page](https://token-tracking.philosophie.ai/) — send that link to
+anyone who just wants the extension. It shows the same latest version as the button above.
 
 <sub>Want the newest unreleased code instead? Grab the
 [source zip of `main`](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip) —
@@ -20,7 +29,12 @@ it installs the same way, just with a few extra development files in the folder.
 
 ## What it does
 
-- One click shows the remaining weekly / short-term quota for all four agents, and when each one resets.
+- One click shows the remaining weekly / short-term quota for all six agents, and when each one resets.
+- **Grok Bot** (the weekly Grok Bot quota included in a Cursor plan) gets its own card. It lives on the same
+  `cursor.com/dashboard/spending` page as the Cursor quota, so one scrape fills both cards. If your Cursor
+  plan has no Grok Bot section, the card says so — untick it in ⚙ to hide it.
+- **Gemini** reads `gemini.google.com/usage`: the weekly limit is the main ring, the short-term "Current usage"
+  window is the bar below it.
 - Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
 - The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
 - When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
@@ -29,8 +43,12 @@ it installs the same way, just with a few extra development files in the folder.
 - An hourly **quiet auto-check** re-scrapes your tracked agents in background tabs without stealing focus (togglable). Pages that won't render in a background tab (can happen with Cursor/Grok) just keep their last data — click Refresh for a guaranteed update.
 - The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
 - If a refresh can't read a page (usually because you're signed out), the card says so and links straight to that product's usage page.
+- The bottom of the panel shows the **installed version** (e.g. `v1.2.1`). Once a day it asks GitHub which
+  release is the newest; when there is a newer one, that line turns into a **"New version vX.Y.Z available — download ↗"**
+  link. That check is the only network request the extension makes — it carries no account or usage data — and
+  you can turn it off in ⚙.
 - No API and no account linking — it reads the numbers straight off each tool's own usage page that you're already logged into.
-- Everything stays local in your browser (`chrome.storage.local`). Nothing is sent to any server.
+- Everything stays local in your browser (`chrome.storage.local`). Your usage data is never sent to any server.
 
 ## Install
 
@@ -47,18 +65,22 @@ it installs the same way, just with a few extra development files in the folder.
 7. Click **Refresh** (or open a product's usage page in a normal tab) to populate the data.
 8. The dashboard defaults to **English**. Click **中文** / **EN** in the header to switch; the choice is stored locally (`uiLang`) and does not follow Chrome's UI language.
 
-To update later: download the zip again, replace the folder's contents, then click the ↻ reload
-button on the extension's card in `chrome://extensions`.
+To update later: when the bottom of the panel says a new version is available (or the version on the
+Download button above is higher than the `vX.Y.Z` at the bottom of your panel), download the zip again,
+replace the folder's contents, then click the ↻ reload button on the extension's card in
+`chrome://extensions`. The panel shows the new version right away.
 
 ## Files
 
 - `manifest.json` — extension manifest (Manifest V3)
-- `agents.js` — shared registry of the four agents (names, colors, usage-page URLs)
+- `agents.js` — shared registry of the six agents (names, colors, usage-page URLs)
+- `update.js` — version helpers shared by background and popup (reads the version from the manifest, compares release tags)
 - `background.js` — service worker that coordinates the "Refresh" flow
 - `content.js` — content script that reads usage numbers from each product page
 - `popup.html` / `popup.js` / `i18n.js` / `activities.js` — the side-panel dashboard (English / 中文) and the rest/move activity pool
 - `_locales/` — Chrome Store / `chrome://extensions` name and description
 - `icons/` — extension icons
+- `docs/` — the landing page (`index.html`) published to GitHub Pages, plus README screenshots
 
 ## Development
 
@@ -84,9 +106,26 @@ released, the workflow bumps the patch version and commits the bump back to
 `package.json` in your PR — that exact version is released when it lands. The
 workflow can also be run manually from the Actions tab.
 
+`manifest.json` is the single source of truth for the version: the panel reads
+it at runtime (`chrome.runtime.getManifest().version`), `npm run build` puts
+it in the zip's filename, and the Release workflow uses it for the `vX.Y.Z` tag
+that the Download badge above and the in-panel update check both look at.
+`npm test` fails if `package.json` drifts out of sync with it.
+
+### Landing page
+
+`docs/index.html` is a standalone landing page for people who don't use GitHub:
+<https://token-tracking.philosophie.ai/>. The Landing page workflow
+(`.github/workflows/pages.yml`) publishes the `docs/` folder to GitHub Pages on
+every push to `main` that touches it, and again after every successful Release so
+the version baked into the page is current. The page's Download button uses the
+same `releases/latest/download/coding-agents-usage.zip` link as the README, and it
+fetches the latest version number from GitHub's API when it loads, so it never
+needs a manual update. One-time setup: **Settings → Pages → Source: GitHub Actions**.
+
 ## Disclaimer
 
-Unofficial and not affiliated with Anthropic, OpenAI, xAI, or Cursor. It only
+Unofficial and not affiliated with Anthropic, OpenAI, xAI, Cursor, or Google. It only
 reads usage numbers already shown on each product's own page.
 
 ---

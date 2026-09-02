@@ -19,6 +19,9 @@ const createdTabs = [];
 const badge = { texts: [], colors: [] };
 const alarms = { created: [], cleared: 0, listener: null };
 const notifications = [];
+const fetches = [];
+// 假的 GitHub API：默认回 v9.9.9（比任何已装版本都新）；可以改成失败
+let fetchReply = { ok: true, json: () => Promise.resolve({ tag_name: 'v9.9.9', html_url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v9.9.9' }) };
 const storageListeners = [];
 const onRemovedListeners = [];
 let nextTabId = 100;
@@ -26,6 +29,7 @@ let nextTabId = 100;
 const ctxObj = {
   setTimeout,
   clearTimeout,
+  fetch: (url, opts) => { fetches.push({ url, opts }); return Promise.resolve(fetchReply); },
   chrome: {
     storage: {
       local: {
@@ -45,11 +49,20 @@ const ctxObj = {
             storageListeners.forEach((fn) => fn(changes, 'local'));
           }, 0);
         },
+        remove: (keys, cb) => {
+          setTimeout(() => {
+            const changes = {};
+            (Array.isArray(keys) ? keys : [keys]).forEach((k) => { if (store[k] !== undefined) { changes[k] = { oldValue: clone(store[k]) }; delete store[k]; } });
+            if (cb) cb();
+            if (Object.keys(changes).length) storageListeners.forEach((fn) => fn(changes, 'local'));
+          }, 0);
+        },
       },
       onChanged: { addListener: (fn) => storageListeners.push(fn) },
     },
     runtime: {
       onMessage: { addListener: (fn) => { onMessage = fn; } },
+      getManifest: () => ({ version: '1.2.1' }),
       lastError: null,
     },
     tabs: {
@@ -201,7 +214,89 @@ const urls = quiet.map((o) => o.url).join(' ');
 if (!urls.includes('claude.ai') || !urls.includes('chatgpt.com') || !urls.includes('grok.com')) {
   problems.push(`quiet check should cover all enabled agents, got ${urls}`);
 }
-if (urls.includes('cursor.com')) problems.push('quiet check must skip unchecked agents');
+// cursor 取消勾选 → 它自己的 usage 页不开；但 grok-bot 还勾着，共用的 spending 页仍要开
+if (urls.includes('cursor.com/dashboard/usage')) problems.push('quiet check must skip unchecked agents');
+if (!urls.includes('cursor.com/dashboard/spending')) problems.push('quiet check should still open the spending page for Grok Bot');
+if (!urls.includes('gemini.google.com')) problems.push('quiet check should include Gemini');
+
+// 11) Cursor 和 Grok Bot 共用 spending 页：勾选全部时同一 URL 只开一次
+await new Promise((r) => ctxObj.chrome.storage.local.set({ enabledAgents: {} }, r));
+await tick(10);
+const before2 = createdTabs.length;
+alarms.listener({ name: 'quietRefresh' });
+await tick(15);
+const all = createdTabs.slice(before2).map((o) => o.url);
+const spending = all.filter((u) => u.startsWith('https://cursor.com/dashboard/spending'));
+if (spending.length !== 1) problems.push(`shared spending page should open once, got ${JSON.stringify(all)}`);
+if (!all.some((u) => u.startsWith('https://cursor.com/dashboard/usage'))) problems.push('cursor usage page should still open');
+
+// 12) 手动 Refresh：也去重；Cursor 抓到、Grok Bot 没抓到 → grok-bot 标为 missing（不是 fail）
+// 假标签页一打开就"抓完关掉"，整轮刷新几毫秒就结束；所以先把 cursor/gemini 的数据
+// 用"未来"的 scraped_at 写好，模拟这一轮抓到了它们，其它产品没抓到
+const before3 = createdTabs.length;
+const t0 = Date.now();
+await send(agentData({ id: 'cursor', scraped_at: t0 + 60000, limits: [{ label: 'Cursor Models', percent_left: 30 }] }));
+await send(agentData({ id: 'gemini', scraped_at: t0 + 60000, limits: [{ label: 'Weekly', percent_left: 90 }] }));
+await send(agentData({ id: 'codex', scraped_at: t0 - 60000, limits: [{ label: 'Weekly', percent_left: 60 }] }));
+await send(agentData({ id: 'grok-build', scraped_at: t0 - 60000, limits: [{ label: 'Weekly (SuperGrok)', percent_left: 60 }] }));
+onMessage({ type: 'refreshAll' }, {}, () => {});
+await tick(80);
+const manual = createdTabs.slice(before3).map((o) => o.url);
+if (manual.filter((u) => u.startsWith('https://cursor.com/dashboard/spending')).length !== 1) {
+  problems.push(`manual refresh should open the spending page once, got ${JSON.stringify(manual)}`);
+}
+const rr = store.refresh && store.refresh.results;
+if (!rr || rr.cursor !== 'ok' || rr.gemini !== 'ok') problems.push(`refresh results should mark cursor/gemini ok, got ${JSON.stringify(rr)}`);
+if (!rr || rr['grok-bot'] !== 'missing') problems.push(`grok-bot should be 'missing' when cursor was read but no Grok Bot section, got ${JSON.stringify(rr)}`);
+if (!rr || rr['grok-build'] !== 'fail') problems.push(`an agent whose page never reported should stay 'fail', got ${JSON.stringify(rr)}`);
+
+// 13) 更新检查：启动时查一次 GitHub、存结果；每天一次的闹钟；关掉开关就清掉
+await tick(10);
+if (fetches.length !== 1 || !fetches[0].url.startsWith('https://api.github.com/repos/jjliu6/coding-agent-usage-tracking/releases/latest')) {
+  problems.push(`startup should ask the GitHub releases API once, got ${JSON.stringify(fetches)}`);
+}
+if (!store.updateCheck || store.updateCheck.latest !== '9.9.9' || !store.updateCheck.checkedAt) {
+  problems.push(`updateCheck should record the latest release, got ${JSON.stringify(store.updateCheck)}`);
+}
+if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v9.9.9') {
+  problems.push(`updateCheck should keep the release page url, got ${JSON.stringify(store.updateCheck)}`);
+}
+if (!alarms.created.some((a) => a.name === 'updateCheck' && a.periodInMinutes === 1440)) {
+  problems.push(`startup should create a daily updateCheck alarm, got ${JSON.stringify(alarms.created)}`);
+}
+// 闹钟到点：强制再查一次
+alarms.listener({ name: 'updateCheck' });
+await tick(10);
+if (fetches.length !== 2) problems.push(`alarm should re-check, got ${fetches.length} fetches`);
+// 查失败：保留上次结果，只记 failedAt
+fetchReply = { ok: false, status: 503 };
+alarms.listener({ name: 'updateCheck' });
+await tick(10);
+if (!store.updateCheck || store.updateCheck.latest !== '9.9.9' || !store.updateCheck.failedAt) {
+  problems.push(`a failed check must keep the last result and note failedAt, got ${JSON.stringify(store.updateCheck)}`);
+}
+// 非 GitHub 的 html_url 不采用，退回默认发布页
+fetchReply = { ok: true, json: () => Promise.resolve({ tag_name: 'v9.9.9', html_url: 'https://evil.example/x' }) };
+alarms.listener({ name: 'updateCheck' });
+await tick(10);
+if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest') {
+  problems.push(`non-GitHub html_url should fall back to the releases page, got ${JSON.stringify(store.updateCheck)}`);
+}
+// 关掉开关：清闹钟、清结果、不再请求
+const clearedBefore = alarms.cleared;
+const fetchesBefore = fetches.length;
+await new Promise((r) => ctxObj.chrome.storage.local.set({ checkUpdates: false }, r));
+await tick(10);
+if (alarms.cleared <= clearedBefore) problems.push('checkUpdates=false should clear the updateCheck alarm');
+if (store.updateCheck !== undefined) problems.push(`checkUpdates=false should drop the stored result, got ${JSON.stringify(store.updateCheck)}`);
+alarms.listener({ name: 'updateCheck' });
+await tick(10);
+if (fetches.length !== fetchesBefore) problems.push('checkUpdates=false must not contact GitHub');
+// 打开开关：马上查一次
+await new Promise((r) => ctxObj.chrome.storage.local.set({ checkUpdates: true }, r));
+await tick(10);
+if (fetches.length !== fetchesBefore + 1) problems.push('checkUpdates=true should check right away');
+if (!store.updateCheck || store.updateCheck.latest !== '9.9.9') problems.push('re-enabling should store a fresh result');
 
 // 11) 动一动提醒：默认关；打开后 2 小时内烧掉 >10% 才提醒；2 小时冷却；只算重置之后的消耗
 const H = 3600000;
@@ -242,4 +337,6 @@ console.log('ok  Badge shows the lowest remaining % across tracked agents');
 console.log('ok  Low-quota notifications fire only on threshold crossings');
 console.log('ok  Hourly quiet check: background tabs only, tracked agents only, toggleable');
 console.log('ok  Move reminder: opt-in, >10% burned in 2h, 2h cooldown, counts from the last reset');
+console.log('ok  Cursor + Grok Bot share one spending-page scrape; missing Grok Bot section is flagged, not failed');
+console.log('ok  Daily update check stores the latest release, survives failures, and is toggleable');
 console.log('\nBackground test passed.');

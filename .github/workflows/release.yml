@@ -17,6 +17,7 @@ on:
       - 'docs/**'
       - 'LICENSE'
       - '.gitignore'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:

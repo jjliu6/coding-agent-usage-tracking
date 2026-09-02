@@ -15,7 +15,8 @@
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://grok.com/*",
-    "https://cursor.com/*"
+    "https://cursor.com/*",
+    "https://gemini.google.com/*"
   ],
   "background": { "service_worker": "background.js" },
   "content_scripts": [
@@ -24,7 +25,8 @@
         "https://claude.ai/*",
         "https://chatgpt.com/*",
         "https://grok.com/*",
-        "https://cursor.com/*"
+        "https://cursor.com/*",
+        "https://gemini.google.com/*"
       ],
       "js": ["parse.js", "content.js"],
       "run_at": "document_idle",
