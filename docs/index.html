@@ -153,18 +153,21 @@
   .feat p { margin: 0; color: var(--fg-muted); font-size: 15px; }
 
   /* ---------- install ---------- */
-  .steps { counter-reset: step; display: grid; gap: 14px; margin-top: 32px; max-width: 760px; }
+  .steps { counter-reset: step; display: grid; gap: 14px; }
   .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
   .step::before { counter-increment: step; content: counter(step); width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 15px; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .step::before { color: #0b1a15; } }
   .step h3 { margin-bottom: 4px; }
   .step p { margin: 0; color: var(--fg-muted); font-size: 15px; }
-  .demo { margin: 0; max-width: 760px; }
-  .demo .vid { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: #fff; }
+  .install-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 40px; align-items: start; margin-top: 36px; }
+  .install-main { min-width: 0; }
+  .demo { margin: 0; min-width: 0; position: sticky; top: 84px; }
+  .demo .vid { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: #fff; cursor: zoom-in; }
   .demo video { display: block; width: 100%; height: auto; }
-  .demo figcaption { font-size: 13.5px; color: var(--fg-faint); margin-top: 10px; text-align: center; }
-  .demo .lead-in { font-size: 15px; color: var(--fg-muted); margin: 6px 0 10px; }
-  .note { margin-top: 22px; max-width: 760px; background: var(--accent-soft); border-radius: var(--radius); padding: 16px 20px; font-size: 14.5px; color: var(--fg); }
+  .demo figcaption { font-size: 13.5px; color: var(--fg-faint); margin-top: 10px; }
+  .demo .lead-in { font-size: 15px; color: var(--fg-muted); margin: 0 0 10px; }
+  @media (max-width: 960px) { .install-grid { grid-template-columns: minmax(0, 1fr); } .demo { position: static; } }
+  .note { margin-top: 22px; background: var(--accent-soft); border-radius: var(--radius); padding: 16px 20px; font-size: 14.5px; color: var(--fg); }
   .note b { color: var(--accent-strong); }
   .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: start; }
   @media (max-width: 800px) { .split { grid-template-columns: minmax(0, 1fr); } }
@@ -315,6 +318,8 @@
     <h2 data-i18n="install.h2">No Chrome Web Store, no build step — just a folder.</h2>
     <p class="lead" data-i18n="install.lead">The extension ships as a plain .zip. You unzip it once and tell Chrome where the folder is.</p>
 
+    <div class="install-grid">
+    <div class="install-main">
     <div class="steps">
       <div class="step">
         <div>
@@ -328,15 +333,6 @@
           <p data-i18n-html="install.s2p">Double-click on macOS, or right-click → <b>Extract All…</b> on Windows. You get a folder containing <code>manifest.json</code>. Keep it out of Downloads — Chrome loads the extension from this folder every time it starts.</p>
         </div>
       </div>
-      <figure class="demo">
-        <p class="lead-in" data-i18n="install.demoLead">Steps 3 and 4 look like this in Chrome (10 seconds, loops):</p>
-        <div class="vid">
-          <video id="demo-video" data-lang="en" autoplay muted loop playsinline preload="metadata" poster="install-demo-en-poster.png" width="1600" height="650">
-            <source src="install-demo-en.webm" type="video/webm">
-          </video>
-        </div>
-        <figcaption data-i18n="install.demoCap">Recorded in a real Chrome. The folder picker is your operating system's own dialog, so it will look a little different.</figcaption>
-      </figure>
       <div class="step">
         <div>
           <h3 data-i18n-html="install.s3h">Open <code>chrome://extensions</code> and turn on Developer mode</h3>
@@ -358,6 +354,17 @@
     </div>
 
     <div class="note" data-i18n-html="install.note"><b>Why “Developer mode”?</b> Chrome calls any extension loaded from a folder a “developer” extension. Nothing here needs coding — it's just how Chrome installs extensions outside its store.</div>
+    </div>
+      <figure class="demo">
+        <p class="lead-in" data-i18n="install.demoLead">Steps 3 and 4, as they look in Chrome (loops every 12 s):</p>
+        <div class="vid">
+          <video id="demo-video" data-lang="en" autoplay muted loop playsinline preload="metadata" poster="install-demo-en-poster.png" width="1600" height="650">
+            <source src="install-demo-en.webm" type="video/webm">
+          </video>
+        </div>
+        <figcaption data-i18n="install.demoCap">Recorded in a real Chrome. Click the video to view it full-screen. The folder picker will be your operating system's own dialog, so it looks a little different.</figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -485,8 +492,8 @@ const I18N = {
     'install.s1p': '点本页的 <a href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">下载</a> 按钮，永远是最新发布的版本。',
     'install.s2h': '解压到一个固定的位置',
     'install.s2p': 'macOS 双击即可，Windows 右键 → <b>全部解压缩…</b>。你会得到一个包含 <code>manifest.json</code> 的文件夹。别放在「下载」目录里——Chrome 每次启动都会从这个文件夹加载扩展。',
-    'install.demoLead': '第 3、4 步在 Chrome 里是这样操作的（10 秒，循环播放）：',
-    'install.demoCap': '在真实的 Chrome 里录制。选文件夹的窗口是你自己操作系统的，样子会略有不同。',
+    'install.demoLead': '第 3、4 步在 Chrome 里的实际操作（12 秒循环）：',
+    'install.demoCap': '在真实的 Chrome 里录制。点击视频可全屏观看。选文件夹的窗口是你自己操作系统的，样子会略有不同。',
     'install.s3h': '打开 <code>chrome://extensions</code>，打开「开发者模式」',
     'install.s3p': '把这个地址粘贴到 Chrome 地址栏。「开发者模式」开关在右上角。',
     'install.s4h': '点「加载已解压的扩展程序」，选中那个文件夹',
@@ -556,6 +563,12 @@ function applyLang(next) {
   renderRelease(); // date formatting depends on language
 }
 document.getElementById('lang').addEventListener('click', () => applyLang(lang === 'zh' ? 'en' : 'zh'));
+// Click the install demo to watch it full-screen (it's small inside the right-hand column).
+document.querySelector('.demo .vid').addEventListener('click', () => {
+  const v = document.getElementById('demo-video');
+  if (document.fullscreenElement) { document.exitFullscreen(); return; }
+  (v.requestFullscreen || v.webkitEnterFullscreen || function () {}).call(v);
+});
 
 /* =====================================================================
    2) Live release info. The download link itself never needs updating
