@@ -51,7 +51,16 @@ function el(extra) {
     innerHTML: '',
     disabled: false,
     title: '',
-    classList: { add: noop },
+    hidden: false,
+    style: {},
+    dataset: {},
+    classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => ({ left: 200, top: 56, width: 176, height: 200, right: 376, bottom: 256 }),
+    offsetWidth: 176,
+    offsetHeight: 200,
+    setPointerCapture: noop,
     ...extra,
   };
 }
@@ -67,6 +76,8 @@ const els = {
   upd: el(),
   hint: el(),
   hair: el({ hidden: true }),
+  buddy: el({ hidden: true }),
+  acts: el({ hidden: true }),
 };
 
 const popupCtx = {
@@ -114,6 +125,9 @@ const popupCtx = {
   location: { href: 'chrome-extension://id/popup.html' },
   setTimeout: noop,
   clearTimeout: noop,
+  setInterval: noop,
+  clearInterval: noop,
+  window: { innerWidth: 380, innerHeight: 720 },
 };
 
 const ctx = vm.createContext(popupCtx);
@@ -268,6 +282,78 @@ if (hairProblems.length) {
 }
 console.log('ok  Hair mascot thins with the average remaining % and can be switched off');
 
+// --- Floating buddy + stage activities ---
+const buddyProblems = [];
+if (ctx.activityStage(80) !== 'high' || ctx.activityStage(20) !== 'mid' || ctx.activityStage(10) !== 'low') {
+  buddyProblems.push('activityStage should be high >50, mid >=20, low <20');
+}
+if (JSON.stringify(ctx.activityIds('high')) !== JSON.stringify(['actStretch', 'actWater', 'actWindow'])) {
+  buddyProblems.push('high stage should offer stretch / water / window');
+}
+if (JSON.stringify(ctx.activityIds('mid')) !== JSON.stringify(['actStand', 'actSquats', 'actEyes'])) {
+  buddyProblems.push('mid stage should offer stand / squats / eyes');
+}
+if (JSON.stringify(ctx.activityIds('low')) !== JSON.stringify(['actWalk', 'actGrass', 'actTea'])) {
+  buddyProblems.push('low stage should offer walk / grass / tea');
+}
+store.showHair = true;
+delete store.activityPick;
+delete store.activityDoneAt;
+ctx.render();
+if (els.buddy.hidden) buddyProblems.push('floating buddy should show when the mascot is on and there is data');
+if (els.acts.hidden) buddyProblems.push('activity list should show until the user completes one');
+if ((els.acts.innerHTML.match(/<button /g) || []).length !== 3) {
+  buddyProblems.push(`high stage should list 3 activities, got ${els.acts.innerHTML}`);
+}
+if (!els.acts.innerHTML.includes('Drink a glass of water')) {
+  buddyProblems.push('high-stage copy should include the water activity');
+}
+if (els.grid.style.display === 'none') {
+  buddyProblems.push('cards should stay visible until the user picks an activity');
+}
+store.activityPick = 'actWater';
+ctx.render();
+if (els.grid.style.display !== 'none') {
+  buddyProblems.push('picking an activity should hide the dashboard cards');
+}
+if (!els.acts.innerHTML.includes('Doing: Drink a glass of water')) {
+  buddyProblems.push(`doing state should name the pick, got ${els.acts.innerHTML}`);
+}
+if (!els.acts.innerHTML.includes('data-act="done"')) {
+  buddyProblems.push('doing state should offer a Done button');
+}
+store.activityPick = null;
+store.activityDoneAt = Date.now();
+ctx.render();
+if (els.grid.style.display === 'none') {
+  buddyProblems.push('completing an activity should show the cards again');
+}
+if (!els.acts.hidden) {
+  buddyProblems.push('completing an activity should dismiss the reminder');
+}
+store.activityDoneAt = Date.now() - (ctx.ACT_SNOOZE_MS + 1000);
+ctx.render();
+if (els.acts.hidden) {
+  buddyProblems.push('after the snooze window the 2–3 activities should come back');
+}
+store.showHair = false;
+store.activityPick = 'actWater';
+store.activityDoneAt = 0;
+ctx.render();
+if (!els.buddy.hidden) buddyProblems.push('showHair=false should hide the floating buddy');
+if (els.grid.style.display === 'none') {
+  buddyProblems.push('hiding the mascot should not hide the cards');
+}
+delete store.showHair;
+delete store.activityPick;
+delete store.activityDoneAt;
+ctx.render();
+if (buddyProblems.length) {
+  console.error(buddyProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Floating buddy lists 3 stage activities; pick hides cards, Done restores them');
+
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
 const evil = {
@@ -404,6 +490,9 @@ const reloadCtxObj = {
   },
   location: { href: 'chrome-extension://id/popup.html' },
   setTimeout: noop,
+  setInterval: noop,
+  clearInterval: noop,
+  window: { innerWidth: 380, innerHeight: 720 },
 };
 const reloadCtx = vm.createContext(reloadCtxObj);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), reloadCtx, { filename: 'agents.js' });

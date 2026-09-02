@@ -317,6 +317,131 @@ function avgPct(map, ids) {
   return n ? Math.round(sum / n) : null;
 }
 
+// 每个发量阶段给 2–3 个活动：选一个去做，点完成后再把卡片细节还回来
+const ACT_SNOOZE_MS = 45 * 60 * 1000;
+const ACTS = {
+  high: ['actStretch', 'actWater', 'actWindow'],
+  mid: ['actStand', 'actSquats', 'actEyes'],
+  low: ['actWalk', 'actGrass', 'actTea'],
+};
+
+function activityStage(pct) {
+  if (pct > 50) return 'high';
+  if (pct >= 20) return 'mid';
+  return 'low';
+}
+
+function activityIds(stage) {
+  return ACTS[stage] || ACTS.high;
+}
+
+function actsSnoozed(doneAt, now) {
+  now = now == null ? Date.now() : now;
+  return !!(doneAt && now - doneAt < ACT_SNOOZE_MS);
+}
+
+function clampBuddy(x, y, buddy) {
+  const w = (buddy && buddy.offsetWidth) || 176;
+  const h = (buddy && buddy.offsetHeight) || 160;
+  const vw = (typeof window !== 'undefined' && window.innerWidth) || 360;
+  const vh = (typeof window !== 'undefined' && window.innerHeight) || 640;
+  const maxX = Math.max(8, vw - w - 8);
+  const maxY = Math.max(8, vh - h - 8);
+  return {
+    x: Math.max(8, Math.min(x, maxX)),
+    y: Math.max(8, Math.min(y, maxY)),
+  };
+}
+
+function placeBuddy(x, y) {
+  const buddy = document.getElementById('buddy');
+  if (!buddy || !buddy.style) return;
+  const p = clampBuddy(x, y, buddy);
+  buddy.style.left = p.x + 'px';
+  buddy.style.top = p.y + 'px';
+  buddy.style.right = 'auto';
+}
+
+function wanderBuddy() {
+  const buddy = document.getElementById('buddy');
+  if (!buddy || buddy.hidden || !buddy.getBoundingClientRect) return;
+  if (buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging')) return;
+  const r = buddy.getBoundingClientRect();
+  placeBuddy(r.left + (Math.random() * 36 - 18), r.top + (Math.random() * 28 - 14));
+}
+
+function initBuddy(pos) {
+  const buddy = document.getElementById('buddy');
+  if (!buddy || (buddy.dataset && buddy.dataset.ready)) return;
+  if (buddy.dataset) buddy.dataset.ready = '1';
+  if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') placeBuddy(pos.x, pos.y);
+  if (buddy.addEventListener) {
+    let dragging = false, ox = 0, oy = 0;
+    buddy.addEventListener('pointerdown', (e) => {
+      let n = e.target;
+      while (n && n !== buddy) {
+        if (n.tagName === 'BUTTON' || (n.dataset && n.dataset.act)) return;
+        n = n.parentNode;
+      }
+      dragging = true;
+      if (buddy.classList && buddy.classList.add) buddy.classList.add('dragging');
+      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : { left: e.clientX, top: e.clientY };
+      ox = e.clientX - r.left;
+      oy = e.clientY - r.top;
+      if (buddy.setPointerCapture && e.pointerId != null) {
+        try { buddy.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      }
+    });
+    buddy.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      placeBuddy(e.clientX - ox, e.clientY - oy);
+    });
+    buddy.addEventListener('pointerup', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      if (buddy.classList && buddy.classList.remove) buddy.classList.remove('dragging');
+      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : null;
+      if (r) chrome.storage.local.set({ buddyPos: { x: r.left, y: r.top } });
+    });
+  }
+  const w = typeof window !== 'undefined' ? window : null;
+  if (w && !w.__buddyWander && typeof setInterval === 'function') {
+    w.__buddyWander = setInterval(wanderBuddy, 4800);
+  }
+}
+
+function renderActs(pct, pick, snoozed) {
+  const wrap = document.getElementById('acts');
+  if (!wrap) return;
+  if (snoozed || pct == null) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  if (pick) {
+    wrap.innerHTML = `<p class="ttl">${t('actDoing', { act: t(pick) })}</p><p class="note">${t('actDoingNote')}</p><button type="button" class="done" data-act="done">${t('actDone')}</button>`;
+    return;
+  }
+  const ids = activityIds(activityStage(pct));
+  const btns = ids.map((id) => `<button type="button" data-act="${id}">${t(id)}</button>`).join('');
+  wrap.innerHTML = `<p class="ttl">${t('actHint')}</p>${btns}`;
+}
+
+function renderBuddy(show, pct, pick, snoozed, pos) {
+  const buddy = document.getElementById('buddy');
+  if (!buddy) return;
+  buddy.hidden = !show;
+  if (!show) return;
+  initBuddy(pos);
+  renderActs(pct, pick, snoozed);
+}
+
+function setDetailsHidden(hidden) {
+  const grid = document.getElementById('grid');
+  if (grid && grid.style) grid.style.display = hidden ? 'none' : '';
+}
+
 function renderHair(pct, show) {
   const box = document.getElementById('hair');
   if (!box) return;
@@ -427,7 +552,7 @@ function renderSettings(en, prefs) {
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'buddyPos'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -450,7 +575,13 @@ function render() {
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
     renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, showHair: res.showHair, moveReminder: res.moveReminder });
-    renderHair(avgPct(map, shown), res.showHair);
+    const pct = avgPct(map, shown);
+    renderHair(pct, res.showHair);
+    const showMascot = res.showHair !== false && pct != null;
+    const pick = res.activityPick || null;
+    const snoozed = actsSnoozed(res.activityDoneAt);
+    setDetailsHidden(showMascot && !!pick && !snoozed);
+    renderBuddy(showMascot, pct, pick, snoozed, res.buddyPos);
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）
@@ -521,6 +652,20 @@ if (gridEl && gridEl.addEventListener) {
     if (!id || !META[id]) return;
     e.preventDefault();
     chrome.tabs.create({ url: META[id].page });
+  });
+}
+const actsEl = document.getElementById('acts');
+if (actsEl && actsEl.addEventListener) {
+  actsEl.addEventListener('click', (e) => {
+    let n = e.target;
+    while (n && n !== e.currentTarget && !(n.dataset && n.dataset.act)) n = n.parentNode;
+    const act = n && n.dataset && n.dataset.act;
+    if (!act) return;
+    if (act === 'done') {
+      chrome.storage.local.set({ activityPick: null, activityDoneAt: Date.now() });
+    } else {
+      chrome.storage.local.set({ activityPick: act, activityDoneAt: 0 });
+    }
   });
 }
 const langBtn = document.getElementById('lang');
