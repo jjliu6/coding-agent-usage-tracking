@@ -38,6 +38,8 @@ it installs the same way, just with a few extra development files in the folder.
 - Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
 - The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
 - When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
+- A tiny **hair mascot** floats on the dashboard, loses hair as your average remaining quota burns down, and can be dragged or left to wander — togglable in settings. Every 2 hours (1 hour if a tracked agent burned more than 10% in that window) it asks you to move: a frosted veil covers the quota cards and 2–3 random stretch / rest activities appear from a pool of 100. Pick one, go do it, tap Done — the veil lifts, hair grows back, and the numbers are readable again.
+- Optional **move reminder** (off by default): when a tracked agent burns more than 10% of its quota within 2 hours, you get a nudge to stand up and touch some grass — at most once every 2 hours per agent. It is a nudge, not a lock: a browser extension can't stop your terminal.
 - An hourly **quiet auto-check** re-scrapes your tracked agents in background tabs without stealing focus (togglable). Pages that won't render in a background tab (can happen with Cursor/Grok) just keep their last data — click Refresh for a guaranteed update.
 - The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
 - If a refresh can't read a page (usually because you're signed out), the card says so and links straight to that product's usage page.
@@ -75,7 +77,7 @@ replace the folder's contents, then click the ↻ reload button on the extension
 - `update.js` — version helpers shared by background and popup (reads the version from the manifest, compares release tags)
 - `background.js` — service worker that coordinates the "Refresh" flow
 - `content.js` — content script that reads usage numbers from each product page
-- `popup.html` / `popup.js` / `i18n.js` — the side-panel dashboard (English / 中文)
+- `popup.html` / `popup.js` / `i18n.js` / `activities.js` — the side-panel dashboard (English / 中文) and the rest/move activity pool
 - `_locales/` — Chrome Store / `chrome://extensions` name and description
 - `icons/` — extension icons
 - `docs/` — the landing page (`index.html`) published to GitHub Pages, plus README screenshots

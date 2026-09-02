@@ -51,7 +51,16 @@ function el(extra) {
     innerHTML: '',
     disabled: false,
     title: '',
-    classList: { add: noop },
+    hidden: false,
+    style: {},
+    dataset: {},
+    classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => ({ left: 200, top: 56, width: 176, height: 200, right: 376, bottom: 256 }),
+    offsetWidth: 176,
+    offsetHeight: 200,
+    setPointerCapture: noop,
     ...extra,
   };
 }
@@ -64,9 +73,15 @@ const els = {
   'brand-name': el(),
   legend: el(),
   grid: el(),
+  stage: el(),
+  veil: el({ hidden: true }),
   upd: el(),
   hint: el(),
+  hair: el({ hidden: true }),
+  buddy: el({ hidden: true }),
+  acts: el({ hidden: true }),
   ver: el(),
+  credits: el(),
 };
 
 const popupCtx = {
@@ -115,10 +130,14 @@ const popupCtx = {
   location: { href: 'chrome-extension://id/popup.html' },
   setTimeout: noop,
   clearTimeout: noop,
+  setInterval: noop,
+  clearInterval: noop,
+  window: { innerWidth: 380, innerHeight: 720 },
 };
 
 const ctx = vm.createContext(popupCtx);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), ctx, { filename: 'agents.js' });
+vm.runInContext(readFileSync(resolve(root, 'activities.js'), 'utf8'), ctx, { filename: 'activities.js' });
 vm.runInContext(readFileSync(resolve(root, 'update.js'), 'utf8'), ctx, { filename: 'update.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), ctx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), ctx, { filename: 'popup.js' });
@@ -169,8 +188,11 @@ if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !
 if (!els.settings.innerHTML.includes('data-agent="grok-bot"') || !els.settings.innerHTML.includes('data-agent="gemini"')) {
   setProblems.push('settings should list Grok Bot and Gemini');
 }
-if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 3) {
-  setProblems.push('autoRefresh, notifyLow and checkUpdates toggles should default to checked');
+if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 4) {
+  setProblems.push('autoRefresh, notifyLow, showHair and checkUpdates toggles should default to checked');
+}
+if (!els.settings.innerHTML.includes('data-pref="moveReminder">')) {
+  setProblems.push('moveReminder toggle should exist and default to unchecked (opt-in)');
 }
 if (!els.settings.innerHTML.includes('data-pref="checkUpdates"')) setProblems.push('settings should have a checkUpdates toggle');
 store.autoRefresh = false;
@@ -237,6 +259,10 @@ store.checkUpdates = true;
 store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: '"><img src=x onerror=alert(1)>' };
 ctx.render();
 if (els.ver.innerHTML.includes('<img')) verProblems.push('update url must be escaped');
+if (!els.credits.innerHTML.includes('Built by') || !els.credits.innerHTML.includes('Junjie Liu') || !els.credits.innerHTML.includes('Philosophie AI')) {
+  verProblems.push(`footer credits should name the author, got ${els.credits.innerHTML}`);
+}
+if (els.credits.innerHTML.includes('credits {n}')) verProblems.push('footer must not use the card credits template');
 delete store.updateCheck;
 delete store.checkUpdates;
 ctx.render();
@@ -344,6 +370,198 @@ if (sparkProblems.length) {
   process.exit(1);
 }
 console.log('ok  Card shows a 7-day sparkline once there is enough history');
+
+// --- Hair mascot: strands follow the average remaining % ---
+const hairProblems = [];
+const strandsOn = (html) => (html.match(/class="h"/g) || []).length;
+const strandsOff = (html) => (html.match(/class="h off"/g) || []).length;
+if (strandsOn(ctx.hairHead(100)) !== 24 || strandsOff(ctx.hairHead(100)) !== 0) hairProblems.push('100% should show all 24 strands');
+if (strandsOn(ctx.hairHead(0)) !== 0 || strandsOff(ctx.hairHead(0)) !== 24) hairProblems.push('0% should hide all 24 strands');
+if (strandsOn(ctx.hairHead(50)) !== 12) hairProblems.push('50% should show 12 strands');
+if (!ctx.hairHead(80).includes('data-mood="smile"') || !ctx.hairHead(10).includes('data-mood="frown"') || !ctx.hairHead(30).includes('data-mood="flat"')) {
+  hairProblems.push('mouth should smile above 50%, stay flat in the middle, and frown below 20%');
+}
+if (ctx.hairHead(100).includes('<line class="h"')) {
+  hairProblems.push('hair should be filled tufts, not radiating lines');
+}
+ctx.render(); // grok at 67% is the only agent with data → average 67
+if (els.hair.hidden) hairProblems.push('mascot should be visible by default once there is data');
+if (!els.hair.innerHTML.includes('<svg')) hairProblems.push('mascot should render an SVG head');
+if (!els.hair.title.includes('67%')) hairProblems.push(`mascot tooltip should carry the average 67%, got ${JSON.stringify(els.hair.title)}`);
+if (strandsOn(els.hair.innerHTML) !== 16) hairProblems.push(`67% should show 16 strands, got ${strandsOn(els.hair.innerHTML)}`);
+store.showHair = false;
+ctx.render();
+if (!els.hair.hidden) hairProblems.push('showHair=false should hide the mascot');
+delete store.showHair;
+ctx.render();
+if (hairProblems.length) {
+  console.error(hairProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Hair mascot thins with the average remaining % and can be switched off');
+
+// --- Floating buddy + stage activities ---
+const buddyProblems = [];
+if (ctx.activityStage(80) !== 'high' || ctx.activityStage(20) !== 'mid' || ctx.activityStage(10) !== 'low') {
+  buddyProblems.push('activityStage should be high >50, mid >=20, low <20');
+}
+if (ctx.ACT_LIST.length !== 100) {
+  buddyProblems.push(`activity pool should have 100 items, got ${ctx.ACT_LIST.length}`);
+}
+if (new Set(ctx.ACT_LIST.map((a) => a.id)).size !== 100) {
+  buddyProblems.push('activity ids should be unique');
+}
+const stageCounts = { high: ctx.activityIds('high').length, mid: ctx.activityIds('mid').length, low: ctx.activityIds('low').length };
+if (stageCounts.high + stageCounts.mid + stageCounts.low !== 100) {
+  buddyProblems.push(`stage pools should cover all 100, got ${JSON.stringify(stageCounts)}`);
+}
+if (stageCounts.high < 30 || stageCounts.mid < 30 || stageCounts.low < 30) {
+  buddyProblems.push(`each stage should have a large pool, got ${JSON.stringify(stageCounts)}`);
+}
+['actStretch', 'actWater', 'actWindow'].forEach((id) => {
+  if (!ctx.activityIds('high').includes(id)) buddyProblems.push(`high pool missing ${id}`);
+});
+['actStand', 'actSquats', 'actEyes'].forEach((id) => {
+  if (!ctx.activityIds('mid').includes(id)) buddyProblems.push(`mid pool missing ${id}`);
+});
+['actWalk', 'actGrass', 'actTea'].forEach((id) => {
+  if (!ctx.activityIds('low').includes(id)) buddyProblems.push(`low pool missing ${id}`);
+});
+const picked = ctx.shufflePick(['a', 'b', 'c', 'd', 'e'], 3, () => 0.2);
+if (picked.length !== 3 || new Set(picked).size !== 3) {
+  buddyProblems.push(`shufflePick should return 3 unique ids, got ${JSON.stringify(picked)}`);
+}
+store.showHair = true;
+delete store.activityPick;
+delete store.activityOffer;
+store.lastMovedAt = Date.now();
+ctx.render();
+if (els.buddy.hidden) buddyProblems.push('floating buddy should show when the mascot is on and there is data');
+if (!els.acts.hidden) buddyProblems.push('activity list should stay away until the sit clock is due');
+if (!els.veil.hidden) buddyProblems.push('veil should stay off until the sit clock is due');
+if (els.grid.style.display === 'none') buddyProblems.push('cards should stay in the DOM when unlocked');
+if (!els.grid.innerHTML) buddyProblems.push('unlocked cards should still render');
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_MS - 1000;
+delete store.activityDoneAt;
+ctx.render();
+if (els.acts.hidden) buddyProblems.push('when due, the 2–3 activities should show');
+if (els.veil.hidden) buddyProblems.push('when due, the frosted veil should cover the cards');
+if (els.grid.style.display === 'none') buddyProblems.push('due state should frost cards, not remove them');
+const nBtns = (els.acts.innerHTML.match(/<button /g) || []).length;
+if (nBtns < 2 || nBtns > 3) {
+  buddyProblems.push(`should list 2–3 random activities, got ${nBtns} from ${els.acts.innerHTML}`);
+}
+if (!store.activityOffer || store.activityOffer.stage !== 'high') {
+  buddyProblems.push('due render should persist a high-stage offer');
+}
+const html1 = els.acts.innerHTML;
+ctx.render();
+if (els.acts.innerHTML !== html1) {
+  buddyProblems.push('re-render should keep the same random offer');
+}
+store.activityPick = store.activityOffer.ids[0];
+ctx.render();
+if (els.veil.hidden) buddyProblems.push('picking an activity should keep the veil on');
+if (els.grid.style.display === 'none') buddyProblems.push('picking should not unmount the cards');
+if (!els.acts.innerHTML.includes('Doing:')) {
+  buddyProblems.push(`doing state should name the pick, got ${els.acts.innerHTML}`);
+}
+if (!els.acts.innerHTML.includes('data-act="done"')) {
+  buddyProblems.push('doing state should offer a Done button');
+}
+store.activityPick = null;
+store.activityDoneAt = Date.now();
+store.lastMovedAt = Date.now();
+ctx.render();
+if (!els.veil.hidden) buddyProblems.push('completing an activity should lift the veil');
+if (!els.acts.hidden) {
+  buddyProblems.push('completing an activity should dismiss the reminder');
+}
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
+store.activityOffer = null;
+ctx.render();
+if (els.acts.hidden) {
+  buddyProblems.push('after the sit interval the 2–3 activities should come back');
+}
+if (els.veil.hidden) buddyProblems.push('after the sit interval the veil should come back');
+const nBtns2 = (els.acts.innerHTML.match(/<button /g) || []).length;
+if (nBtns2 < 2 || nBtns2 > 3) {
+  buddyProblems.push(`after interval should list 2–3 new activities, got ${nBtns2}`);
+}
+store.showHair = false;
+store.activityPick = 'actWater';
+store.activityDoneAt = 0;
+ctx.render();
+if (!els.buddy.hidden) buddyProblems.push('showHair=false should hide the floating buddy');
+if (!els.veil.hidden) buddyProblems.push('hiding the mascot should lift the veil');
+if (els.grid.style.display === 'none') {
+  buddyProblems.push('hiding the mascot should not hide the cards');
+}
+delete store.showHair;
+delete store.activityPick;
+delete store.activityDoneAt;
+delete store.activityOffer;
+store.lastMovedAt = Date.now();
+ctx.render();
+if (buddyProblems.length) {
+  console.error(buddyProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Sit clock frosts cards when due; pick keeps the veil; Done lifts it');
+
+// --- Completing a move grows the hair back ---
+const growProblems = [];
+if (ctx.restoreHairBoost(10) !== 90 || ctx.restoreHairBoost(100) !== 0) {
+  growProblems.push('restoreHairBoost should fill the gap to 100%');
+}
+if (ctx.displayHairPct(10, 90) !== 100 || ctx.displayHairPct(67, 0) !== 67) {
+  growProblems.push('displayHairPct should add the exercise boost and cap at 100');
+}
+if (ctx.clampHairBoost(100, 40) !== 0) {
+  growProblems.push('quota reset should drop leftover exercise boost');
+}
+store.activityPick = 'actWalk';
+ctx.completeActivity();
+if (store.hairBoostPct !== 33) {
+  growProblems.push(`complete at 67% remaining should set boost 33, got ${store.hairBoostPct}`);
+}
+if (store.activityPick != null) growProblems.push('complete should clear the pick');
+if (store.activityOffer != null) growProblems.push('complete should clear the offer so the next round shuffles again');
+ctx.render();
+if (strandsOn(els.hair.innerHTML) !== 24) {
+  growProblems.push(`after Done, hair should be full (24), got ${strandsOn(els.hair.innerHTML)}`);
+}
+if (!els.hair.innerHTML.includes('data-mood="smile"')) growProblems.push('restored hair should smile');
+if (!els.hair.title.includes('100%')) {
+  growProblems.push(`restored tooltip should be 100%, got ${JSON.stringify(els.hair.title)}`);
+}
+store.agents = {
+  'grok-build': {
+    ...grok,
+    limits: [{ label: 'Weekly (SuperGrok)', percent_left: 57, resets_text: grok.limits[0].resets_text }],
+  },
+};
+ctx.render();
+if (strandsOn(els.hair.innerHTML) !== 22) {
+  growProblems.push(`further burn 57+33=90 should show 22 strands, got ${strandsOn(els.hair.innerHTML)}`);
+}
+store.agents = { 'grok-build': grok };
+store.hairBoostPct = 90;
+ctx.render();
+if (store.hairBoostPct !== 33) {
+  growProblems.push(`boost should clamp to 100-67=33, got ${store.hairBoostPct}`);
+}
+store.agents = { 'grok-build': grok };
+delete store.hairBoostPct;
+delete store.activityPick;
+delete store.activityDoneAt;
+ctx.render();
+if (growProblems.length) {
+  console.error(growProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Completing a move restores hair to 100%; later burns thin it again');
 
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
@@ -483,9 +701,13 @@ const reloadCtxObj = {
   },
   location: { href: 'chrome-extension://id/popup.html' },
   setTimeout: noop,
+  setInterval: noop,
+  clearInterval: noop,
+  window: { innerWidth: 380, innerHeight: 720 },
 };
 const reloadCtx = vm.createContext(reloadCtxObj);
 vm.runInContext(readFileSync(resolve(root, 'agents.js'), 'utf8'), reloadCtx, { filename: 'agents.js' });
+vm.runInContext(readFileSync(resolve(root, 'activities.js'), 'utf8'), reloadCtx, { filename: 'activities.js' });
 vm.runInContext(readFileSync(resolve(root, 'update.js'), 'utf8'), reloadCtx, { filename: 'update.js' });
 vm.runInContext(readFileSync(resolve(root, 'i18n.js'), 'utf8'), reloadCtx, { filename: 'i18n.js' });
 vm.runInContext(readFileSync(resolve(root, 'popup.js'), 'utf8'), reloadCtx, { filename: 'popup.js' });

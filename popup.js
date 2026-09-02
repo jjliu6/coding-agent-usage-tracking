@@ -234,6 +234,372 @@ function ring(pct, color) {
   </svg>`;
 }
 
+// ---- 发量：画一个会谢顶的人，不是色块拼图 ----
+// 24 缕是手摆的头发，从脑顶先掉、刘海最后掉，看起来像发际线往后推。
+const HAIR_N = 24;
+const HAIR_FILL = '#c9842c';
+const HAIR_EDGE = '#7a4a14';
+
+// 每一缕：[根x, 根y, 控制点x, 控制点y, 梢x, 梢y, 宽度]
+// 0–7 刘海（最后掉）  8–15 两侧  16–23 头顶（最先掉）
+const HAIR_LOCKS = [
+  [29, 41, 27, 49, 27, 55, 4.0],
+  [33, 39, 32, 49, 31, 56, 4.2],
+  [37, 38, 37, 49, 36, 57, 4.4],
+  [43, 38, 43, 49, 44, 57, 4.4],
+  [47, 39, 48, 49, 49, 56, 4.2],
+  [51, 41, 53, 49, 53, 55, 4.0],
+  [35, 40, 34, 48, 33, 54, 3.6],
+  [45, 40, 46, 48, 47, 54, 3.6],
+  [22, 44, 18, 48, 17, 56, 3.8],
+  [20, 40, 15, 42, 14, 50, 3.8],
+  [21, 35, 16, 34, 14, 40, 4.0],
+  [25, 32, 20, 30, 17, 34, 4.0],
+  [58, 44, 62, 48, 63, 56, 3.8],
+  [60, 40, 65, 42, 66, 50, 3.8],
+  [59, 35, 64, 34, 66, 40, 4.0],
+  [55, 32, 60, 30, 63, 34, 4.0],
+  [30, 30, 28, 22, 26, 18, 5.2],
+  [35, 28, 34, 20, 33, 16, 5.4],
+  [40, 27, 40, 19, 40, 15, 5.6],
+  [45, 28, 46, 20, 47, 16, 5.4],
+  [50, 30, 52, 22, 54, 18, 5.2],
+  [37, 29, 36, 21, 35, 17, 4.6],
+  [43, 29, 44, 21, 45, 17, 4.6],
+  [40, 31, 40, 24, 40, 19, 5.0],
+];
+
+function hairSet(pct) {
+  const shown = Math.round(Math.max(0, Math.min(100, pct == null ? 0 : pct)) / 100 * HAIR_N);
+  const on = new Set();
+  for (let k = 0; k < shown; k++) on.add(k);
+  return on;
+}
+
+function hairLockPath(x0, y0, cx, cy, x1, y1, w) {
+  const dx = x1 - x0, dy = y1 - y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const px = -dy / len * w, py = dx / len * w;
+  const n = (v) => v.toFixed(1);
+  return `M${n(x0)} ${n(y0)} Q${n(cx + px)} ${n(cy + py)} ${n(x1)} ${n(y1)} Q${n(cx - px)} ${n(cy - py)} ${n(x0)} ${n(y0)} Z`;
+}
+
+function hairLockEl(i, visible) {
+  const [x0, y0, cx, cy, x1, y1, w] = HAIR_LOCKS[i];
+  return `<path class="h${visible ? '' : ' off'}" data-i="${i}" d="${hairLockPath(x0, y0, cx, cy, x1, y1, w)}" fill="${HAIR_FILL}" stroke="${HAIR_EDGE}" stroke-width="1.05" stroke-linejoin="round"/>`;
+}
+
+function mouthMood(pct) {
+  if (pct > 50) return 'smile';
+  if (pct >= 20) return 'flat';
+  return 'frown';
+}
+
+function mouthPath(pct) {
+  if (pct > 50) return 'M33 62 Q40 67.5 47 62';
+  if (pct >= 20) return 'M34 63 H46';
+  return 'M33 64.2 Q40 60.2 47 64.2';
+}
+
+function faceMarkup(pct) {
+  const mood = mouthMood(pct);
+  const brows = mood === 'frown'
+    ? '<path d="M27 48.2 Q31 46.6 35 48.6" fill="none" stroke="#3a2a20" stroke-width="1.6" stroke-linecap="round"/><path d="M53 48.2 Q49 46.6 45 48.6" fill="none" stroke="#3a2a20" stroke-width="1.6" stroke-linecap="round"/>'
+    : '<path d="M27 48 Q31 46.4 35 48.2" fill="none" stroke="#3a2a20" stroke-width="1.55" stroke-linecap="round"/><path d="M53 48 Q49 46.4 45 48.2" fill="none" stroke="#3a2a20" stroke-width="1.55" stroke-linecap="round"/>';
+  const eyes = '<ellipse cx="31" cy="53.2" rx="4.1" ry="4.8" fill="#fff"/><ellipse cx="49" cy="53.2" rx="4.1" ry="4.8" fill="#fff"/><ellipse cx="31.4" cy="53.6" rx="2.3" ry="2.7" fill="#3a2416"/><ellipse cx="49.4" cy="53.6" rx="2.3" ry="2.7" fill="#3a2416"/><circle cx="30.4" cy="52.2" r="1" fill="#fff"/><circle cx="48.4" cy="52.2" r="1" fill="#fff"/>';
+  return `${brows}${eyes}<ellipse cx="24.5" cy="58.5" rx="4.2" ry="2.1" fill="#f0a090" opacity=".45"/><ellipse cx="55.5" cy="58.5" rx="4.2" ry="2.1" fill="#f0a090" opacity=".45"/><path d="M39.2 57.6 Q40 59.2 40.8 57.6" fill="none" stroke="#d4a07a" stroke-width="1.3" stroke-linecap="round"/><path class="m" data-mood="${mood}" d="${mouthPath(pct)}" fill="none" stroke="#3a2a20" stroke-width="2.1" stroke-linecap="round"/>`;
+}
+
+function hairHead(pct) {
+  const on = hairSet(pct);
+  let locks = '';
+  for (let i = 16; i < HAIR_N; i++) locks += hairLockEl(i, on.has(i));
+  for (let i = 8; i < 16; i++) locks += hairLockEl(i, on.has(i));
+  for (let i = 0; i < 8; i++) locks += hairLockEl(i, on.has(i));
+  return `<svg viewBox="0 0 80 96" aria-hidden="true">
+    <path d="M26 76 C26 70 31 68 40 72 C49 68 54 70 54 76 L52 96 H28 Z" fill="#3d4654" stroke="#2a303a" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M34 78 C36 83 44 83 46 78" fill="none" stroke="#2a303a" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M35 71 h10 v9 H35 Z" fill="#f3c29a"/>
+    <ellipse cx="20" cy="52" rx="5.2" ry="7.2" fill="#f3c29a" stroke="#c47a4a" stroke-width="1.8"/>
+    <ellipse cx="60" cy="52" rx="5.2" ry="7.2" fill="#f3c29a" stroke="#c47a4a" stroke-width="1.8"/>
+    <ellipse cx="40" cy="52" rx="22" ry="23" fill="#f3c29a" stroke="#c47a4a" stroke-width="2.15"/>
+    <ellipse cx="40" cy="40" rx="9" ry="4.2" fill="#fff" opacity=".22"/>
+    <g class="locks">${locks}</g>
+    <g class="face">${faceMarkup(pct)}</g>
+  </svg>`;
+}
+
+// 所有显示中的产品的平均剩余%（只算有数据的），没有任何数据就返回 null
+function avgPct(map, ids) {
+  let sum = 0, n = 0;
+  ids.forEach((id) => {
+    const a = map[id];
+    const p = a && a.limits && a.limits[0] ? a.limits[0].percent_left : null;
+    if (p != null) { sum += p; n++; }
+  });
+  return n ? Math.round(sum / n) : null;
+}
+
+// 每个发量阶段从一大池子里随机抽 2–3 个活动；同一轮提醒里保持不变
+// 到点才催：默认每 2 小时；近 2 小时烧掉超过 10% 则改成 1 小时
+var SIT_INTERVAL_MS = 2 * 3600000;
+var SIT_INTERVAL_BURN_MS = 3600000;
+var MOVE_WINDOW_MS = 2 * 3600000;
+var MOVE_DROP_PCT = 10;
+var ACT_SNOOZE_MS = SIT_INTERVAL_MS;
+
+function activityStage(pct) {
+  if (pct > 50) return 'high';
+  if (pct >= 20) return 'mid';
+  return 'low';
+}
+
+function activityIds(stage) {
+  const pool = (typeof ACTS !== 'undefined' && ACTS[stage]) || [];
+  return pool.slice();
+}
+
+function actLabel(id) {
+  const a = typeof ACT_BY_ID !== 'undefined' ? ACT_BY_ID[id] : null;
+  if (a) return currentLang() === 'zh' ? a.zh : a.en;
+  return t(id);
+}
+
+function shufflePick(ids, n, rnd) {
+  rnd = typeof rnd === 'function' ? rnd : Math.random;
+  n = Math.max(0, Math.min(n, ids.length));
+  const copy = ids.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy.slice(0, n);
+}
+
+function makeActivityOffer(stage, rnd) {
+  rnd = typeof rnd === 'function' ? rnd : Math.random;
+  const pool = activityIds(stage);
+  const n = rnd() < 0.35 ? 2 : 3;
+  return { stage, ids: shufflePick(pool, Math.min(n, pool.length), rnd) };
+}
+
+function offerFits(offer, stage) {
+  const pool = activityIds(stage);
+  if (!offer || offer.stage !== stage || !offer.ids || !offer.ids.length) return false;
+  if (offer.ids.length < 2 || offer.ids.length > 3) return false;
+  return offer.ids.every((id) => pool.indexOf(id) !== -1);
+}
+
+function currentOffer(pct, pick, snoozed, stored) {
+  if (pct == null || snoozed || pick) return stored || null;
+  const stage = activityStage(pct);
+  if (offerFits(stored, stage)) return stored;
+  const offer = makeActivityOffer(stage);
+  chrome.storage.local.set({ activityOffer: offer });
+  return offer;
+}
+
+function actsSnoozed(doneAt, now) {
+  now = now == null ? Date.now() : now;
+  return !!(doneAt && now - doneAt < ACT_SNOOZE_MS);
+}
+
+function recentSitBurn(hist, id, now) {
+  const seg = (hist || []).filter((h) => h.id === id && h.t >= now - MOVE_WINDOW_MS && h.t <= now)
+    .sort((x, y) => x.t - y.t);
+  if (seg.length < 2) return 0;
+  let start = 0;
+  for (let i = 1; i < seg.length; i++) { if (seg[i].pct > seg[i - 1].pct + 2) start = i; }
+  const a = seg[start], b = seg[seg.length - 1];
+  return a === b ? 0 : a.pct - b.pct;
+}
+
+function sitIntervalMs(hist, ids, now) {
+  now = now == null ? Date.now() : now;
+  const hard = (ids || []).some((id) => recentSitBurn(hist, id, now) > MOVE_DROP_PCT);
+  return hard ? SIT_INTERVAL_BURN_MS : SIT_INTERVAL_MS;
+}
+
+function sitDue(lastMovedAt, pick, now, interval) {
+  now = now == null ? Date.now() : now;
+  interval = interval == null ? SIT_INTERVAL_MS : interval;
+  if (pick) return true;
+  if (!lastMovedAt) return false;
+  return now - lastMovedAt >= interval;
+}
+
+// 做完运动会把显示发量补回 100%。之后额度再烧，头发还会掉，鼓励再去动。
+function restoreHairBoost(avg) {
+  if (avg == null) return 0;
+  return Math.max(0, Math.min(100, 100 - avg));
+}
+
+function clampHairBoost(avg, boost) {
+  if (avg == null) return 0;
+  return Math.min(Math.max(0, boost || 0), restoreHairBoost(avg));
+}
+
+function displayHairPct(avg, boost) {
+  if (avg == null) return null;
+  return Math.max(0, Math.min(100, Math.round(avg + clampHairBoost(avg, boost))));
+}
+
+function completeActivity() {
+  chrome.storage.local.get(['agents', 'enabledAgents'], (res) => {
+    const en = res.enabledAgents || {};
+    const shown = ORDER.filter((id) => en[id] !== false);
+    const avg = avgPct(res.agents || {}, shown);
+    chrome.storage.local.set({
+      activityPick: null,
+      activityDoneAt: Date.now(),
+      lastMovedAt: Date.now(),
+      hairBoostPct: restoreHairBoost(avg),
+      activityOffer: null,
+    });
+  });
+}
+
+function clampBuddy(x, y, buddy) {
+  const w = (buddy && buddy.offsetWidth) || 176;
+  const h = (buddy && buddy.offsetHeight) || 160;
+  const vw = (typeof window !== 'undefined' && window.innerWidth) || 360;
+  const vh = (typeof window !== 'undefined' && window.innerHeight) || 640;
+  const maxX = Math.max(8, vw - w - 8);
+  const maxY = Math.max(8, vh - h - 8);
+  return {
+    x: Math.max(8, Math.min(x, maxX)),
+    y: Math.max(8, Math.min(y, maxY)),
+  };
+}
+
+function placeBuddy(x, y) {
+  const buddy = document.getElementById('buddy');
+  if (!buddy || !buddy.style) return;
+  const p = clampBuddy(x, y, buddy);
+  buddy.style.left = p.x + 'px';
+  buddy.style.top = p.y + 'px';
+  buddy.style.right = 'auto';
+}
+
+function wanderBuddy() {
+  const buddy = document.getElementById('buddy');
+  if (!buddy || buddy.hidden || !buddy.getBoundingClientRect) return;
+  if (buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging')) return;
+  const r = buddy.getBoundingClientRect();
+  placeBuddy(r.left + (Math.random() * 36 - 18), r.top + (Math.random() * 28 - 14));
+}
+
+function initBuddy(pos) {
+  const buddy = document.getElementById('buddy');
+  if (!buddy || (buddy.dataset && buddy.dataset.ready)) return;
+  if (buddy.dataset) buddy.dataset.ready = '1';
+  if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') placeBuddy(pos.x, pos.y);
+  if (buddy.addEventListener) {
+    let dragging = false, ox = 0, oy = 0;
+    buddy.addEventListener('pointerdown', (e) => {
+      let n = e.target;
+      while (n && n !== buddy) {
+        if (n.tagName === 'BUTTON' || (n.dataset && n.dataset.act)) return;
+        n = n.parentNode;
+      }
+      dragging = true;
+      if (buddy.classList && buddy.classList.add) buddy.classList.add('dragging');
+      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : { left: e.clientX, top: e.clientY };
+      ox = e.clientX - r.left;
+      oy = e.clientY - r.top;
+      if (buddy.setPointerCapture && e.pointerId != null) {
+        try { buddy.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      }
+    });
+    buddy.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      placeBuddy(e.clientX - ox, e.clientY - oy);
+    });
+    buddy.addEventListener('pointerup', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      if (buddy.classList && buddy.classList.remove) buddy.classList.remove('dragging');
+      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : null;
+      if (r) chrome.storage.local.set({ buddyPos: { x: r.left, y: r.top } });
+    });
+  }
+  const w = typeof window !== 'undefined' ? window : null;
+  if (w && !w.__buddyWander && typeof setInterval === 'function') {
+    w.__buddyWander = setInterval(wanderBuddy, 4800);
+  }
+}
+
+function renderActs(pct, pick, due, offer) {
+  const wrap = document.getElementById('acts');
+  if (!wrap) return;
+  if (!due || pct == null) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  if (pick) {
+    wrap.innerHTML = `<p class="ttl">${t('actDoing', { act: actLabel(pick) })}</p><p class="note">${t('actDoingNote')}</p><button type="button" class="done" data-act="done">${t('actDone')}</button>`;
+    return;
+  }
+  const ids = (offer && offer.ids) || [];
+  const btns = ids.map((id) => `<button type="button" data-act="${id}">${actLabel(id)}</button>`).join('');
+  wrap.innerHTML = `<p class="ttl">${t('actHint')}</p>${btns}`;
+}
+
+function renderBuddy(show, pct, pick, due, pos, offer) {
+  const buddy = document.getElementById('buddy');
+  if (!buddy) return;
+  buddy.hidden = !show;
+  if (!show) return;
+  initBuddy(pos);
+  renderActs(pct, pick, due, offer);
+}
+
+function setVeil(on) {
+  const veil = document.getElementById('veil');
+  const stage = document.getElementById('stage');
+  const grid = document.getElementById('grid');
+  if (grid && grid.style) grid.style.display = '';
+  if (veil) veil.hidden = !on;
+  if (stage && stage.classList) {
+    if (on) stage.classList.add('veiled');
+    else stage.classList.remove('veiled');
+  }
+}
+
+function renderHair(pct, show) {
+  const box = document.getElementById('hair');
+  if (!box) return;
+  box.hidden = show === false || pct == null;
+  if (box.hidden) return;
+  box.title = t('hairTip', { n: pct });
+  // 已经画过就只切换 class，保留原来的 DOM 节点，CSS 过渡才会播放"掉发"动画
+  const strands = box.querySelectorAll ? box.querySelectorAll('.h') : null;
+  if (strands && strands.length === HAIR_N) {
+    const on = hairSet(pct);
+    strands.forEach((el) => el.classList.toggle('off', !on.has(+el.dataset.i)));
+    const face = box.querySelector('.face');
+    if (face) face.innerHTML = faceMarkup(pct);
+    const m = box.querySelector('.m');
+    if (m) {
+      m.setAttribute('d', mouthPath(pct));
+      m.setAttribute('data-mood', mouthMood(pct));
+    }
+    const b = box.querySelector('.hl b');
+    if (b) {
+      b.textContent = pct + '%';
+      b.style.color = health(pct);
+    }
+    const lab = box.querySelector('.hl i');
+    if (lab) lab.textContent = t('hairLabel');
+  } else {
+    box.innerHTML = hairHead(pct) + `<span class="hl"><b style="color:${health(pct)}">${pct}%</b><i>${t('hairLabel')}</i></span>`;
+  }
+}
+
 function openLink(id) {
   return `<a href="#" data-open="${id}">${t('openPage')} ↗</a>`;
 }
@@ -302,14 +668,17 @@ function renderSettings(en, prefs) {
   const agents = AGENTS.map((a) =>
     `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
   ).join('');
-  // 三个功能开关（默认都开）：每小时静默自动检查、低额度通知、每天检查更新
+  // 功能开关：每小时静默自动检查、低额度通知、发量小人、每天检查更新（默认开）；动一动提醒（默认关）
   const toggles = [
-    ['autoRefresh', t('autoCheck'), t('autoCheckTip')],
-    ['notifyLow', t('notifyLow'), t('notifyLowTip')],
-    ['checkUpdates', t('checkUpdates'), t('checkUpdatesTip')],
-  ].map(([k, label, tip]) =>
-    `<label title="${tip}"><input type="checkbox" data-pref="${k}"${prefs[k] !== false ? ' checked' : ''}>${label}</label>`
-  ).join('');
+    ['autoRefresh', t('autoCheck'), t('autoCheckTip'), true],
+    ['notifyLow', t('notifyLow'), t('notifyLowTip'), true],
+    ['showHair', t('showHair'), t('showHairTip'), true],
+    ['checkUpdates', t('checkUpdates'), t('checkUpdatesTip'), true],
+    ['moveReminder', t('moveReminder'), t('moveReminderTip'), false],
+  ].map(([k, label, tip, dflt]) => {
+    const on = prefs[k] == null ? dflt : prefs[k] !== false;
+    return `<label title="${tip}"><input type="checkbox" data-pref="${k}"${on ? ' checked' : ''}>${label}</label>`;
+  }).join('');
   box.innerHTML = `<span class="st">${t('tracked')}</span>${agents}<span class="brk"></span>${toggles}`;
 }
 
@@ -341,7 +710,7 @@ function renderVersion(info) {
 function creditsLine() {
   const link = (href, text) =>
     `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
-  const line = t('credits', {
+  const line = t('builtBy', {
     name: link('https://x.com/jjl13579', 'Junjie Liu'),
     org: link('https://philosophie.ai', 'Philosophie AI'),
     src: link('https://github.com/' + UPDATE_REPO, t('creditsSrc')),
@@ -357,7 +726,7 @@ function renderCredits() {
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'checkUpdates', 'updateCheck'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'lastMovedAt', 'buddyPos', 'hairBoostPct', 'activityOffer', 'checkUpdates', 'updateCheck'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -382,7 +751,25 @@ function render() {
     };
     document.getElementById('grid').innerHTML =
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
-    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, checkUpdates: res.checkUpdates });
+    renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, showHair: res.showHair, moveReminder: res.moveReminder, checkUpdates: res.checkUpdates });
+    const pct = avgPct(map, shown);
+    const boost = clampHairBoost(pct, res.hairBoostPct);
+    if (pct != null && (res.hairBoostPct || 0) !== boost) {
+      chrome.storage.local.set({ hairBoostPct: boost });
+    }
+    renderHair(displayHairPct(pct, boost), res.showHair);
+    const showMascot = res.showHair !== false && pct != null;
+    const pick = res.activityPick || null;
+    let lastMoved = res.lastMovedAt || res.activityDoneAt || 0;
+    if (!lastMoved) {
+      lastMoved = Date.now();
+      chrome.storage.local.set({ lastMovedAt: lastMoved });
+    }
+    const interval = sitIntervalMs(hist, shown, Date.now());
+    const due = sitDue(lastMoved, pick, Date.now(), interval);
+    const offer = due ? currentOffer(pct, pick, false, res.activityOffer) : null;
+    setVeil(showMascot && due);
+    renderBuddy(showMascot, pct, pick, due, res.buddyPos, offer);
     renderVersion(res.checkUpdates === false ? null : res.updateCheck);
     renderCredits();
     const any = shown.some((id) => map[id]);
@@ -440,7 +827,7 @@ if (settingsBox) {
       return;
     }
     const pref = el.dataset.pref;
-    if (pref === 'autoRefresh' || pref === 'notifyLow' || pref === 'checkUpdates') {
+    if (pref === 'autoRefresh' || pref === 'notifyLow' || pref === 'showHair' || pref === 'moveReminder' || pref === 'checkUpdates') {
       chrome.storage.local.set({ [pref]: checked });
     }
   });
@@ -455,6 +842,20 @@ if (gridEl && gridEl.addEventListener) {
     if (!id || !META[id]) return;
     e.preventDefault();
     chrome.tabs.create({ url: META[id].page });
+  });
+}
+const actsEl = document.getElementById('acts');
+if (actsEl && actsEl.addEventListener) {
+  actsEl.addEventListener('click', (e) => {
+    let n = e.target;
+    while (n && n !== e.currentTarget && !(n.dataset && n.dataset.act)) n = n.parentNode;
+    const act = n && n.dataset && n.dataset.act;
+    if (!act) return;
+    if (act === 'done') {
+      completeActivity();
+    } else {
+      chrome.storage.local.set({ activityPick: act, activityDoneAt: 0 });
+    }
   });
 }
 const langBtn = document.getElementById('lang');
