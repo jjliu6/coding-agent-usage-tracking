@@ -5,7 +5,7 @@
 <style>
   :root{--card2:#1f232c;--ink:#eef1f6;--ink2:#aab2c0;--muted:#6b7382;--track:#2a2f3a;--line:#23272f;--good:#5ccf9e;--warn:#e6b45c;--bad:#e57373}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{width:100%;max-width:600px;background:#14161c;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);padding:13px}
+  body{width:100%;max-width:600px;background:#14161c;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);padding:13px;min-height:100vh;display:flex;flex-direction:column}
   .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .brand{font-weight:700;letter-spacing:.12em;font-size:12px}
   .brand .s{color:#8fe3c6}
@@ -46,8 +46,8 @@
   .ver a{color:var(--ink2);text-decoration:none}
   .ver a:hover{text-decoration:underline}
   .ver a.new{color:var(--warn);font-weight:600}
-  .credits{font-size:9.5px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5}
-  .credits a{color:var(--ink2);text-decoration:none}
+  .credits{font-size:8.5px;color:#4a515e;text-align:center;margin-top:auto;padding-top:22px;line-height:1.5}
+  .credits a{color:#5f6775;text-decoration:none}
   .credits a:hover{text-decoration:underline}
   .fail{font-size:10.5px;color:var(--bad);margin-top:9px;line-height:1.4}
   .fail a{color:var(--ink2);white-space:nowrap}

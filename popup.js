@@ -342,7 +342,7 @@ function creditsLine() {
   const link = (href, text) =>
     `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
   const line = t('credits', {
-    name: link('https://github.com/jjliu6', 'Junjie Liu'),
+    name: link('https://x.com/jjl13579', 'Junjie Liu'),
     org: link('https://philosophie.ai', 'Philosophie AI'),
     src: link('https://github.com/' + UPDATE_REPO, t('creditsSrc')),
   });
