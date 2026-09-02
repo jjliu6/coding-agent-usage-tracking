@@ -340,6 +340,35 @@ function actsSnoozed(doneAt, now) {
   return !!(doneAt && now - doneAt < ACT_SNOOZE_MS);
 }
 
+// 做完运动会把显示发量补回 100%。之后额度再烧，头发还会掉，鼓励再去动。
+function restoreHairBoost(avg) {
+  if (avg == null) return 0;
+  return Math.max(0, Math.min(100, 100 - avg));
+}
+
+function clampHairBoost(avg, boost) {
+  if (avg == null) return 0;
+  return Math.min(Math.max(0, boost || 0), restoreHairBoost(avg));
+}
+
+function displayHairPct(avg, boost) {
+  if (avg == null) return null;
+  return Math.max(0, Math.min(100, Math.round(avg + clampHairBoost(avg, boost))));
+}
+
+function completeActivity() {
+  chrome.storage.local.get(['agents', 'enabledAgents'], (res) => {
+    const en = res.enabledAgents || {};
+    const shown = ORDER.filter((id) => en[id] !== false);
+    const avg = avgPct(res.agents || {}, shown);
+    chrome.storage.local.set({
+      activityPick: null,
+      activityDoneAt: Date.now(),
+      hairBoostPct: restoreHairBoost(avg),
+    });
+  });
+}
+
 function clampBuddy(x, y, buddy) {
   const w = (buddy && buddy.offsetWidth) || 176;
   const h = (buddy && buddy.offsetHeight) || 160;
@@ -552,7 +581,7 @@ function renderSettings(en, prefs) {
 let staleTimer = null;
 
 function render() {
-  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'buddyPos'], (res) => {
+  chrome.storage.local.get(['agents', 'history', 'refresh', 'enabledAgents', 'autoRefresh', 'notifyLow', 'showHair', 'moveReminder', 'activityPick', 'activityDoneAt', 'buddyPos', 'hairBoostPct'], (res) => {
     const map = res.agents || {};
     const hist = res.history || [];
     const en = res.enabledAgents || {};
@@ -576,7 +605,11 @@ function render() {
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
     renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, showHair: res.showHair, moveReminder: res.moveReminder });
     const pct = avgPct(map, shown);
-    renderHair(pct, res.showHair);
+    const boost = clampHairBoost(pct, res.hairBoostPct);
+    if (pct != null && (res.hairBoostPct || 0) !== boost) {
+      chrome.storage.local.set({ hairBoostPct: boost });
+    }
+    renderHair(displayHairPct(pct, boost), res.showHair);
     const showMascot = res.showHair !== false && pct != null;
     const pick = res.activityPick || null;
     const snoozed = actsSnoozed(res.activityDoneAt);
@@ -662,7 +695,7 @@ if (actsEl && actsEl.addEventListener) {
     const act = n && n.dataset && n.dataset.act;
     if (!act) return;
     if (act === 'done') {
-      chrome.storage.local.set({ activityPick: null, activityDoneAt: Date.now() });
+      completeActivity();
     } else {
       chrome.storage.local.set({ activityPick: act, activityDoneAt: 0 });
     }

@@ -354,6 +354,58 @@ if (buddyProblems.length) {
 }
 console.log('ok  Floating buddy lists 3 stage activities; pick hides cards, Done restores them');
 
+// --- Completing a move grows the hair back ---
+const growProblems = [];
+if (ctx.restoreHairBoost(10) !== 90 || ctx.restoreHairBoost(100) !== 0) {
+  growProblems.push('restoreHairBoost should fill the gap to 100%');
+}
+if (ctx.displayHairPct(10, 90) !== 100 || ctx.displayHairPct(67, 0) !== 67) {
+  growProblems.push('displayHairPct should add the exercise boost and cap at 100');
+}
+if (ctx.clampHairBoost(100, 40) !== 0) {
+  growProblems.push('quota reset should drop leftover exercise boost');
+}
+store.activityPick = 'actWalk';
+ctx.completeActivity();
+if (store.hairBoostPct !== 33) {
+  growProblems.push(`complete at 67% remaining should set boost 33, got ${store.hairBoostPct}`);
+}
+if (store.activityPick != null) growProblems.push('complete should clear the pick');
+ctx.render();
+if (strandsOn(els.hair.innerHTML) !== 24) {
+  growProblems.push(`after Done, hair should be full (24), got ${strandsOn(els.hair.innerHTML)}`);
+}
+if (!els.hair.innerHTML.includes('data-mood="smile"')) growProblems.push('restored hair should smile');
+if (!els.hair.title.includes('100%')) {
+  growProblems.push(`restored tooltip should be 100%, got ${JSON.stringify(els.hair.title)}`);
+}
+store.agents = {
+  'grok-build': {
+    ...grok,
+    limits: [{ label: 'Weekly (SuperGrok)', percent_left: 57, resets_text: grok.limits[0].resets_text }],
+  },
+};
+ctx.render();
+if (strandsOn(els.hair.innerHTML) !== 22) {
+  growProblems.push(`further burn 57+33=90 should show 22 strands, got ${strandsOn(els.hair.innerHTML)}`);
+}
+store.agents = { 'grok-build': grok };
+store.hairBoostPct = 90;
+ctx.render();
+if (store.hairBoostPct !== 33) {
+  growProblems.push(`boost should clamp to 100-67=33, got ${store.hairBoostPct}`);
+}
+store.agents = { 'grok-build': grok };
+delete store.hairBoostPct;
+delete store.activityPick;
+delete store.activityDoneAt;
+ctx.render();
+if (growProblems.length) {
+  console.error(growProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Completing a move restores hair to 100%; later burns thin it again');
+
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
 const evil = {
