@@ -10,6 +10,7 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 ## Download
 
 [![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/coding-agent-usage-tracking?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)
+[![Total downloads](https://img.shields.io/github/downloads/jjliu6/coding-agent-usage-tracking/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/coding-agent-usage-tracking/releases)
 
 The version on the button is the one you get. No GitHub account, no git, no build step —
 [download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip),

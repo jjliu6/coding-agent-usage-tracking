@@ -336,6 +336,24 @@ function renderVersion(info) {
   if (el) el.innerHTML = versionLine(info);
 }
 
+// 面板最底部的小字：作者 / 协议 / 源码链接 + 免责声明。跟版本行一样在每次 render() 时重画，
+// 这样切换中英文后文字会跟着变。链接文字来自 i18n，URL 写死在这里。
+function creditsLine() {
+  const link = (href, text) =>
+    `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
+  const line = t('credits', {
+    name: link('https://github.com/jjliu6', 'Junjie Liu'),
+    org: link('https://philosophie.ai', 'Philosophie AI'),
+    src: link('https://github.com/' + UPDATE_REPO, t('creditsSrc')),
+  });
+  return `${line}<br>${esc(t('disclaimer'))}`;
+}
+
+function renderCredits() {
+  const el = document.getElementById('credits');
+  if (el) el.innerHTML = creditsLine();
+}
+
 let staleTimer = null;
 
 function render() {
@@ -366,6 +384,7 @@ function render() {
       shown.map((id) => card(id, map[id], byId[id], failed(id))).join('');
     renderSettings(en, { autoRefresh: res.autoRefresh, notifyLow: res.notifyLow, checkUpdates: res.checkUpdates });
     renderVersion(res.checkUpdates === false ? null : res.updateCheck);
+    renderCredits();
     const any = shown.some((id) => map[id]);
     const btn = document.getElementById('refresh');
     // 顶部：最后一次Refresh时间（取所有产品里最新的一次）

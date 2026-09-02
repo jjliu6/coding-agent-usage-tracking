@@ -158,6 +158,11 @@
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .step::before { color: #0b1a15; } }
   .step h3 { margin-bottom: 4px; }
   .step p { margin: 0; color: var(--fg-muted); font-size: 15px; }
+  .demo { margin: 0; max-width: 760px; }
+  .demo .vid { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: #fff; }
+  .demo video { display: block; width: 100%; height: auto; }
+  .demo figcaption { font-size: 13.5px; color: var(--fg-faint); margin-top: 10px; text-align: center; }
+  .demo .lead-in { font-size: 15px; color: var(--fg-muted); margin: 6px 0 10px; }
   .note { margin-top: 22px; max-width: 760px; background: var(--accent-soft); border-radius: var(--radius); padding: 16px 20px; font-size: 14.5px; color: var(--fg); }
   .note b { color: var(--accent-strong); }
   .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: start; }
@@ -227,6 +232,8 @@
         <span id="rel-date" hidden></span>
         <span class="dot" id="rel-dot1" hidden>·</span>
         <span id="rel-size" hidden></span>
+        <span class="dot" id="rel-dot2" hidden>·</span>
+        <span id="rel-downloads" hidden></span>
         <span class="dot">·</span>
         <a id="rel-all" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases" target="_blank" rel="noopener" data-i18n="hero.allReleases">All releases</a>
       </div>
@@ -320,6 +327,15 @@
           <p data-i18n-html="install.s2p">Double-click on macOS, or right-click → <b>Extract All…</b> on Windows. You get a folder containing <code>manifest.json</code>. Keep it out of Downloads — Chrome loads the extension from this folder every time it starts.</p>
         </div>
       </div>
+      <figure class="demo">
+        <p class="lead-in" data-i18n="install.demoLead">Steps 3 and 4 look like this in Chrome (10 seconds, loops):</p>
+        <div class="vid">
+          <video id="demo-video" data-lang="en" autoplay muted loop playsinline preload="metadata" poster="install-demo-en-poster.png" width="1600" height="650">
+            <source src="install-demo-en.webm" type="video/webm">
+          </video>
+        </div>
+        <figcaption data-i18n="install.demoCap">Recorded in a real Chrome. The folder picker is your operating system's own dialog, so it will look a little different.</figcaption>
+      </figure>
       <div class="step">
         <div>
           <h3 data-i18n-html="install.s3h">Open <code>chrome://extensions</code> and turn on Developer mode</h3>
@@ -419,7 +435,7 @@
 
 <footer>
   <div class="wrap">
-    <p data-i18n-html="foot.built">Built by <a href="https://www.linkedin.com/in/junjieliu/" target="_blank" rel="noopener">Junjie Liu</a> at <a href="https://philosophie.ai" target="_blank" rel="noopener">Philosophie AI</a> · MIT License · <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">Source on GitHub</a></p>
+    <p data-i18n-html="foot.built">Built by <a href="https://github.com/jjliu6" target="_blank" rel="noopener">Junjie Liu</a> (<a href="https://x.com/jjl13579" target="_blank" rel="noopener">@jjl13579 on X</a>) at <a href="https://philosophie.ai" target="_blank" rel="noopener">Philosophie AI</a> · MIT License · <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">Source on GitHub</a></p>
     <p data-i18n="foot.disclaimer">Unofficial. Not affiliated with Anthropic, OpenAI, xAI, Cursor or Google. It only reads usage numbers already shown on each product's own page.</p>
   </div>
 </footer>
@@ -468,6 +484,8 @@ const I18N = {
     'install.s1p': '点本页的 <a href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">下载</a> 按钮，永远是最新发布的版本。',
     'install.s2h': '解压到一个固定的位置',
     'install.s2p': 'macOS 双击即可，Windows 右键 → <b>全部解压缩…</b>。你会得到一个包含 <code>manifest.json</code> 的文件夹。别放在「下载」目录里——Chrome 每次启动都会从这个文件夹加载扩展。',
+    'install.demoLead': '第 3、4 步在 Chrome 里是这样操作的（10 秒，循环播放）：',
+    'install.demoCap': '在真实的 Chrome 里录制。选文件夹的窗口是你自己操作系统的，样子会略有不同。',
     'install.s3h': '打开 <code>chrome://extensions</code>，打开「开发者模式」',
     'install.s3p': '把这个地址粘贴到 Chrome 地址栏。「开发者模式」开关在右上角。',
     'install.s4h': '点「加载已解压的扩展程序」，选中那个文件夹',
@@ -501,7 +519,7 @@ const I18N = {
     'bottom.h2': '准备好了？完全免费。',
     'bottom.lead': '下载、解压、加载文件夹。两分钟后你就能确切知道自己还剩多少额度。',
     'bottom.how': '怎么安装',
-    'foot.built': '由 <a href="https://www.linkedin.com/in/junjieliu/" target="_blank" rel="noopener">Junjie Liu</a> @ <a href="https://philosophie.ai" target="_blank" rel="noopener">Philosophie AI</a> 构建 · MIT 协议 · <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">GitHub 源码</a>',
+    'foot.built': '由 <a href="https://github.com/jjliu6" target="_blank" rel="noopener">Junjie Liu</a>（<a href="https://x.com/jjl13579" target="_blank" rel="noopener">X @jjl13579</a>）@ <a href="https://philosophie.ai" target="_blank" rel="noopener">Philosophie AI</a> 构建 · MIT 协议 · <a href="https://github.com/jjliu6/coding-agent-usage-tracking" target="_blank" rel="noopener">GitHub 源码</a>',
     'foot.disclaimer': '非官方项目，与 Anthropic、OpenAI、xAI、Cursor、Google 均无关联。它只读取各产品页面上已经展示的用量数字。',
   },
 };
@@ -525,6 +543,15 @@ function applyLang(next) {
     ? 'Coding Agents 额度 — 一眼看清 Claude Code、Codex、Cursor、Grok、Gemini 还剩多少额度'
     : 'Coding Agents Usage — see your remaining Claude Code, Codex, Cursor, Grok & Gemini quota at a glance';
   try { localStorage.setItem('uiLang', lang); } catch (e) {}
+  // The install demo was recorded once per language (Chrome's own UI is in that language too).
+  const v = document.getElementById('demo-video');
+  if (v && v.dataset.lang !== lang) {
+    v.dataset.lang = lang;
+    v.poster = 'install-demo-' + lang + '-poster.png';
+    v.querySelector('source').src = 'install-demo-' + lang + '.webm';
+    v.load();
+    v.play().catch(() => {});
+  }
   renderRelease(); // date formatting depends on language
 }
 document.getElementById('lang').addEventListener('click', () => applyLang(lang === 'zh' ? 'en' : 'zh'));
@@ -538,7 +565,7 @@ document.getElementById('lang').addEventListener('click', () => applyLang(lang =
    ===================================================================== */
 const REPO = 'jjliu6/coding-agent-usage-tracking';
 const ASSET = 'coding-agents-usage.zip';
-let release = null; // { version, publishedAt, size }
+let release = null; // { version, publishedAt, size, downloads }
 
 function parseVersionTag(tag) {
   const m = String(tag || '').trim().match(/^v?(\d+(?:\.\d+)*)$/i);
@@ -565,6 +592,23 @@ function renderRelease() {
     d.hidden = false;
   }
   if (release.size) { s.textContent = fmtSize(release.size); s.hidden = false; dot.hidden = false; }
+  const dl = document.getElementById('rel-downloads');
+  if (release.downloads) {
+    const n = new Intl.NumberFormat(lang === 'zh' ? 'zh-CN' : 'en-US').format(release.downloads);
+    dl.textContent = lang === 'zh' ? '累计下载 ' + n + ' 次' : n + ' downloads';
+    dl.hidden = false; document.getElementById('rel-dot2').hidden = false;
+  }
+}
+// Total downloads across every release. GitHub counts each download of a release
+// asset, and the landing page and README both link to the same asset, so this
+// covers both — no server of our own needed.
+async function loadDownloads() {
+  try {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/releases?per_page=100', { headers: { Accept: 'application/vnd.github+json' } });
+    if (!r.ok) return null;
+    const list = await r.json();
+    return list.reduce((sum, rel) => sum + (rel.assets || []).reduce((a, x) => a + (x.download_count || 0), 0), 0);
+  } catch (e) { return null; }
 }
 async function loadRelease() {
   try {
@@ -573,14 +617,20 @@ async function loadRelease() {
       const j = await r.json();
       const asset = (j.assets || []).find((a) => a.name === ASSET);
       const version = parseVersionTag(j.tag_name);
-      if (version) { release = { version, publishedAt: j.published_at, size: asset ? asset.size : 0 }; renderRelease(); return; }
+      if (version) {
+        release = { version, publishedAt: j.published_at, size: asset ? asset.size : 0 };
+        renderRelease();
+        const downloads = await loadDownloads();
+        if (downloads != null) { release.downloads = downloads; renderRelease(); }
+        return;
+      }
     }
   } catch (e) { /* offline or rate-limited — fall through */ }
   try {
     const r = await fetch('version.json', { cache: 'no-store' });
     if (r.ok) {
       const j = await r.json();
-      if (j && j.version) { release = { version: j.version, publishedAt: j.publishedAt, size: j.size }; renderRelease(); }
+      if (j && j.version) { release = { version: j.version, publishedAt: j.publishedAt, size: j.size, downloads: j.downloads }; renderRelease(); }
     }
   } catch (e) { /* no baked file (e.g. local preview) — keep the generic label */ }
 }
