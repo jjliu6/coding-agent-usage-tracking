@@ -246,7 +246,12 @@ const strandsOff = (html) => (html.match(/class="h off"/g) || []).length;
 if (strandsOn(ctx.hairHead(100)) !== 24 || strandsOff(ctx.hairHead(100)) !== 0) hairProblems.push('100% should show all 24 strands');
 if (strandsOn(ctx.hairHead(0)) !== 0 || strandsOff(ctx.hairHead(0)) !== 24) hairProblems.push('0% should hide all 24 strands');
 if (strandsOn(ctx.hairHead(50)) !== 12) hairProblems.push('50% should show 12 strands');
-if (!ctx.hairHead(80).includes('Q16 26.5') || !ctx.hairHead(10).includes('Q16 22.5')) hairProblems.push('mouth should smile above 50% and frown below 20%');
+if (!ctx.hairHead(80).includes('data-mood="smile"') || !ctx.hairHead(10).includes('data-mood="frown"') || !ctx.hairHead(30).includes('data-mood="flat"')) {
+  hairProblems.push('mouth should smile above 50%, stay flat in the middle, and frown below 20%');
+}
+if (ctx.hairHead(100).includes('<line class="h"')) {
+  hairProblems.push('hair should be filled tufts, not radiating lines');
+}
 ctx.render(); // grok at 67% is the only agent with data → average 67
 if (els.hair.hidden) hairProblems.push('mascot should be visible by default once there is data');
 if (!els.hair.innerHTML.includes('<svg')) hairProblems.push('mascot should render an SVG head');
