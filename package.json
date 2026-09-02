@@ -1,6 +1,6 @@
 {
   "name": "coding-agent-usage-tracking",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Chrome (Manifest V3) extension that shows remaining usage for Claude Code, Codex, Grok Build, Cursor, Grok Bot and Gemini.",
   "type": "module",
