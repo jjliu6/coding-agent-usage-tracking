@@ -144,7 +144,7 @@ const I18N = {
     moveReminder: '动一动提醒',
     moveReminderTip: '某个产品 2 小时内消耗超过 10% 额度时，提醒你起来动一动（每个产品每 2 小时最多一次）。',
     moveTitle: '{name}：2 小时烧了 {n}% 🔥',
-    moveBody: '起来伸个懒腰、摸摸草。不动不能继续 vibe coding！',
+    moveBody: '起来伸个懒腰、出去透口气。不动一动，就别接着 vibe coding 了！',
     weeklyAll: 'Weekly 额度 (All models)',
     session5h: '当前会话 (5h)',
     weekly: 'Weekly 额度',
