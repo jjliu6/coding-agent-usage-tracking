@@ -21,7 +21,7 @@ const AGENTS = [
   },
   {
     id: 'grok-build',
-    name: 'Grok Build',
+    name: 'Grok',
     color: '#B78CF0',
     page: 'https://grok.com/?_s=usage',
     scrape: ['https://grok.com/?_s=usage&cawrefresh=1'],

@@ -1,7 +1,7 @@
 # coding-agent-usage-tracking
 
 A Chrome (Manifest V3) browser extension that shows your remaining usage for
-**Claude Code, Codex, Grok Build, Cursor, Grok Bot and Gemini** at a glance — in one popup.
+**Claude Code, Codex, Grok, Cursor, Grok Bot and Gemini** at a glance — in one popup.
 
 ![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, Cursor, Grok Bot, and Gemini](docs/dashboard.webp)
 
@@ -39,7 +39,7 @@ it installs the same way, just with a few extra development files in the folder.
 - The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
 - When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
 - A tiny **hair mascot** floats on the dashboard, loses hair as your average remaining quota burns down, and can be dragged or left to wander — togglable in settings. Every 2 hours (1 hour if a tracked agent burned more than 10% in that window) it asks you to move: a frosted veil covers the quota cards and 2–3 random stretch / rest activities appear from a pool of 100. Pick one, go do it, tap Done — the veil lifts, hair grows back, and the numbers are readable again.
-- Optional **move reminder** (off by default): when a tracked agent burns more than 10% of its quota within 2 hours, you get a nudge to stand up and touch some grass — at most once every 2 hours per agent. It is a nudge, not a lock: a browser extension can't stop your terminal.
+- **Move reminder** (on by default, switch in ⚙): when a tracked agent burns more than 10% of its quota within 2 hours, you get a nudge to stand up and touch some grass — at most once every 2 hours per agent. It is a nudge, not a lock: a browser extension can't stop your terminal.
 - An hourly **quiet auto-check** re-scrapes your tracked agents in background tabs without stealing focus (togglable). Pages that won't render in a background tab (can happen with Cursor/Grok) just keep their last data — click Refresh for a guaranteed update.
 - The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
 - If a refresh can't read a page (usually because you're signed out), the card says so and links straight to that product's usage page.

@@ -59,7 +59,7 @@ function makeAgents() {
   if (h.includes('grok.com')) {
     const parsed = parseGrokUsage(T);
     if (!parsed) return one(null);
-    return one({ id: 'grok-build', name: 'Grok Build', color: '#B78CF0',
+    return one({ id: 'grok-build', name: 'Grok', color: '#B78CF0',
       limits: [{ label: 'Weekly (SuperGrok)', percent_left: 100 - parsed.used, resets_text: parsed.reset }],
       breakdown: parsed.breakdown });
   }
