@@ -668,13 +668,13 @@ function renderSettings(en, prefs) {
   const agents = AGENTS.map((a) =>
     `<label><input type="checkbox" data-agent="${a.id}"${en[a.id] !== false ? ' checked' : ''}>${a.name}</label>`
   ).join('');
-  // 功能开关：每小时静默自动检查、低额度通知、发量小人、每天检查更新（默认开）；动一动提醒（默认关）
+  // 功能开关：每小时静默自动检查、低额度通知、发量小人、每天检查更新、动一动提醒（全部默认开）
   const toggles = [
     ['autoRefresh', t('autoCheck'), t('autoCheckTip'), true],
     ['notifyLow', t('notifyLow'), t('notifyLowTip'), true],
     ['showHair', t('showHair'), t('showHairTip'), true],
     ['checkUpdates', t('checkUpdates'), t('checkUpdatesTip'), true],
-    ['moveReminder', t('moveReminder'), t('moveReminderTip'), false],
+    ['moveReminder', t('moveReminder'), t('moveReminderTip'), true],
   ].map(([k, label, tip, dflt]) => {
     const on = prefs[k] == null ? dflt : prefs[k] !== false;
     return `<label title="${tip}"><input type="checkbox" data-pref="${k}"${on ? ' checked' : ''}>${label}</label>`;
