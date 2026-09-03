@@ -1,0 +1,70 @@
+// Renders the landing page into a temp dir and checks the result is complete:
+// every language page exists, nothing is left untranslated or unfilled, the
+// SEO tags point at the right URLs, and no asset path is relative (the pages
+// live one folder deep, so "icon.png" would 404 while "/icon.png" works).
+
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { build } from './build-pages.mjs';
+
+const out = mkdtempSync(join(tmpdir(), 'pages-'));
+try {
+  await build(out);
+  const page = (rel) => readFileSync(join(out, rel), 'utf8');
+  const root = page('index.html');
+  const en = page('en/index.html');
+  const zh = page('zh/index.html');
+
+  // Assets copied, build inputs left out.
+  assert.ok(existsSync(join(out, 'icon-128.png')), 'assets are copied to the site root');
+  assert.ok(!existsSync(join(out, 'i18n')), 'translation source is not deployed');
+
+  for (const [name, html] of [['/', root], ['/en/', en], ['/zh/', zh]]) {
+    assert.ok(!/\{\{\w+\}\}/.test(html), `${name}: every {{placeholder}} filled`);
+    assert.ok(!html.includes('build:root-redirect'), `${name}: build marker removed`);
+    assert.ok(!html.includes('TEMPLATE'), `${name}: template banner removed`);
+    assert.ok(!/\sdata-i18n/.test(html), `${name}: data-i18n attributes stripped`);
+    assert.ok(!/<html[^>]*>[\s\S]*?\bsrc="[^/h]/.test(html), `${name}: no relative src= paths`);
+    assert.ok(!/href="[a-z0-9-]+\.(png|json|webm)"/.test(html), `${name}: no relative href= paths`);
+    assert.ok(html.includes('hreflang="en" href="https://token-tracking.philosophie.ai/en/"'), `${name}: hreflang en`);
+    assert.ok(html.includes('hreflang="zh-CN" href="https://token-tracking.philosophie.ai/zh/"'), `${name}: hreflang zh`);
+    assert.ok(html.includes('hreflang="x-default"'), `${name}: hreflang x-default`);
+    assert.ok(html.includes("fetch('/version.json'"), `${name}: version.json fetched from site root`);
+  }
+
+  // English pages.
+  assert.ok(en.includes('<html lang="en">'));
+  assert.ok(en.includes('<link rel="canonical" href="https://token-tracking.philosophie.ai/en/">'));
+  assert.ok(en.includes('<title>Coding Agents Usage —'));
+  assert.ok(en.includes('href="/zh/" hreflang="zh-CN" lang="zh-CN" title="切换到中文">中文</a>'), 'en page links to /zh/');
+  assert.ok(en.includes('src="/shot-panel-en.png"') && en.includes('src="/install-demo-en.webm"'), 'en assets');
+  assert.ok(!en.includes('location.replace'), '/en/ has no redirect script');
+
+  // Root = English + redirect script.
+  assert.ok(root.includes("location.replace('/zh/'"), 'root redirects Chinese readers');
+  assert.ok(root.includes("history.replaceState(null, '', '/en/'"), 'root rewrites the URL to /en/');
+  assert.equal(root.replace(/<script>\n\/\* Root URL only[\s\S]*?<\/script>\n/, ''), en, 'root is otherwise identical to /en/');
+  assert.ok(root.indexOf('location.replace') < root.indexOf('<style>'), 'redirect runs before the stylesheet');
+
+  // Chinese page.
+  assert.ok(zh.includes('<html lang="zh-CN">'));
+  assert.ok(zh.includes('<link rel="canonical" href="https://token-tracking.philosophie.ai/zh/">'));
+  assert.ok(zh.includes('<title>Coding Agents 额度'));
+  assert.ok(zh.includes('<meta name="description" content="免费开源的 Chrome 扩展'), 'meta description translated');
+  assert.ok(zh.includes('<meta property="og:locale" content="zh_CN">'));
+  assert.ok(zh.includes('href="/en/" hreflang="en" lang="en" title="Switch to English">EN</a>'), 'zh page links to /en/');
+  assert.ok(zh.includes('src="/shot-panel-zh.png"') && zh.includes('src="/install-demo-zh.webm"'), 'zh assets');
+  assert.ok(zh.includes('<h2>准备好了？完全免费。</h2>'), 'body text translated');
+  assert.ok(zh.includes('<span class="hl">还剩多少</span>'), 'inline HTML translations kept their tags');
+  assert.ok(!zh.includes('Ready? It\'s free.'), 'no English body text left on /zh/');
+
+  // English body text is untouched on /en/ (spot checks: first and last translatable strings).
+  assert.ok(en.includes('<span>Coding Agents Usage</span>'), 'first English string kept');
+  assert.ok(en.includes("<p>Unofficial. Not affiliated with Anthropic, OpenAI, xAI, Cursor or Google."), 'last English string kept');
+
+  console.log('pages-test: OK');
+} finally {
+  rmSync(out, { recursive: true, force: true });
+}
