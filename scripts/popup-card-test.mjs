@@ -570,6 +570,111 @@ if (growProblems.length) {
 }
 console.log('ok  Completing a move restores hair to 100%; later burns thin it again');
 
+// --- Sit-clock hair engine: 1h hard-burn / 2h normal, quota is a ceiling ---
+const engineProblems = [];
+const t0 = 1_700_000_000_000;
+if (ctx.sitHairPct(0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
+  engineProblems.push('no lastMovedAt should leave the sit clock at 100');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
+  engineProblems.push('just-moved sit clock should be 100');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + 30 * 60000) !== 50) {
+  engineProblems.push('30 min into a 1h clock should be 50');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 0) {
+  engineProblems.push('1h clock should hit 0 when the reminder is due');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 50) {
+  engineProblems.push('1h into a 2h clock should be 50 — hair is not gone yet');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_MS) !== 0) {
+  engineProblems.push('2h clock should hit 0 when the reminder is due');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
+  engineProblems.push('just after a move, sit clock should keep the restored 100');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0 + 30 * 60000) !== 50) {
+  engineProblems.push('restored hair should be half gone 30 min into a 1h clock');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 0) {
+  engineProblems.push('restored hair should be gone when the 1h reminder fires');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 50) {
+  engineProblems.push('same 1h sit on a 2h clock should still show 50% hair');
+}
+if (ctx.displayHairPct(10, 0, t0, ctx.SIT_INTERVAL_MS, t0) !== 10) {
+  engineProblems.push('quota should cap hair when there is no exercise boost');
+}
+if (ctx.displayHairPct(80, 20, t0, ctx.SIT_INTERVAL_BURN_MS, t0 + 6 * 60000) !== 90) {
+  engineProblems.push('6 min into 1h (90% sit) should still show 90, not wait on quota');
+}
+const tick1h = ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_BURN_MS, t0);
+if (tick1h !== 36000) {
+  engineProblems.push(`1h clock should tick every 36s (1%), got ${tick1h}`);
+}
+const tick2h = ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_MS, t0);
+if (tick2h !== 72000) {
+  engineProblems.push(`2h clock should tick every 72s (1%), got ${tick2h}`);
+}
+if (ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 0) {
+  engineProblems.push('no hair tick after the clock has run out');
+}
+const lateWait = ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS - 8000);
+if (lateWait !== 8000) {
+  engineProblems.push(`last tick should land on due (8s left), got ${lateWait}`);
+}
+
+store.agents = { 'grok-build': grok };
+store.history = [];
+store.hairBoostPct = 33;
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_BURN_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
+delete store.activityPick;
+delete store.activityOffer;
+ctx.render();
+if (strandsOn(els.hair.innerHTML) !== 12) {
+  engineProblems.push(`1h into a 2h clock (no hard burn) should show ~12 strands, got ${strandsOn(els.hair.innerHTML)}`);
+}
+if (!els.hair.title.includes('50%')) {
+  engineProblems.push(`1h into a 2h clock should read 50%, got ${JSON.stringify(els.hair.title)}`);
+}
+
+const nowHard = Date.now();
+store.history = [
+  { id: 'grok-build', t: nowHard - 90 * 60000, pct: 82 },
+  { id: 'grok-build', t: nowHard - 2 * 60000, pct: 67 },
+];
+store.lastMovedAt = nowHard - ctx.SIT_INTERVAL_BURN_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
+store.activityOffer = null;
+ctx.render();
+if (ctx.sitIntervalMs(store.history, ['grok-build'], nowHard) !== ctx.SIT_INTERVAL_BURN_MS) {
+  engineProblems.push('15% burn in 2h should switch the sit clock to 1 hour');
+}
+if (strandsOn(els.hair.innerHTML) !== 0 || strandsOff(els.hair.innerHTML) !== 24) {
+  engineProblems.push(`1h hard-burn clock should finish all 24 strands, on=${strandsOn(els.hair.innerHTML)} off=${strandsOff(els.hair.innerHTML)}`);
+}
+if (!els.hair.title.includes('0%')) {
+  engineProblems.push(`bald tooltip should be 0% when the 1h reminder fires, got ${JSON.stringify(els.hair.title)}`);
+}
+if (els.acts.hidden) engineProblems.push('1h hard-burn clock should also bring the move reminder');
+if (els.veil.hidden) engineProblems.push('1h hard-burn clock should frost the cards when hair is gone');
+
+store.history = [];
+store.agents = { 'grok-build': grok };
+delete store.hairBoostPct;
+delete store.activityPick;
+delete store.activityDoneAt;
+delete store.activityOffer;
+store.lastMovedAt = Date.now();
+ctx.render();
+if (engineProblems.length) {
+  console.error(engineProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Sit-clock hair finishes in 1h when burning hard, 2h otherwise');
+
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
 const evil = {

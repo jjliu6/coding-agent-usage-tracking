@@ -430,7 +430,17 @@ function sitDue(lastMovedAt, pick, now, interval) {
   return now - lastMovedAt >= interval;
 }
 
-// 做完运动会把显示发量补回 100%。之后额度再烧，头发还会掉，鼓励再去动。
+// 掉发引擎：显示发量 = min(额度发量, 久坐时钟)
+//
+// 额度发量 = avg + boost。做完运动把 boost 补到 100-avg，显示先回到 100%；
+// 之后平均额度每掉 1%，头发也掉 1%。6 个产品里只有一个 2 小时烧掉 10% 时，
+// 平均额度只掉 ~1.7%，24 缕里可能一根都不掉——所以单靠额度对不齐 1 小时提醒。
+//
+// 久坐时钟：从 lastMovedAt 起在当前 sit interval 内从 100 线性掉到 0。
+//   平时 2 小时掉完 → 每缕 ≈ 5 分钟（24 缕 / 7200s）
+//   近 2 小时某个产品烧掉 >10% 则 1 小时掉完 → 每缕 ≈ 2.5 分钟
+// 催你动的那一刻头发一定是 0；烧得猛时不会出现「提醒到了头发还在」。
+// 额度仍是上限：刚打开、还没做过运动时，发量不会高于当前平均剩余。
 function restoreHairBoost(avg) {
   if (avg == null) return 0;
   return Math.max(0, Math.min(100, 100 - avg));
@@ -441,9 +451,45 @@ function clampHairBoost(avg, boost) {
   return Math.min(Math.max(0, boost || 0), restoreHairBoost(avg));
 }
 
-function displayHairPct(avg, boost) {
+function sitHairPct(lastMovedAt, interval, now) {
+  now = now == null ? Date.now() : now;
+  interval = interval == null || interval <= 0 ? SIT_INTERVAL_MS : interval;
+  if (!lastMovedAt) return 100;
+  const elapsed = now - lastMovedAt;
+  if (elapsed <= 0) return 100;
+  if (elapsed >= interval) return 0;
+  return 100 * (1 - elapsed / interval);
+}
+
+function displayHairPct(avg, boost, lastMovedAt, interval, now) {
   if (avg == null) return null;
-  return Math.max(0, Math.min(100, Math.round(avg + clampHairBoost(avg, boost))));
+  const quota = Math.max(0, Math.min(100, Math.round(avg + clampHairBoost(avg, boost))));
+  const sit = Math.round(sitHairPct(lastMovedAt, interval, now));
+  return Math.max(0, Math.min(quota, sit));
+}
+
+// 面板开着时按「每 1% 久坐时钟」重绘，24 缕会一根根掉，到点遮罩也会自己出现。
+// 1 小时间隔 → 36s 一跳；2 小时 → 72s。已经到期就不再排。
+var hairTickTimer = null;
+function nextSitHairTickMs(lastMovedAt, interval, now) {
+  now = now == null ? Date.now() : now;
+  interval = interval == null || interval <= 0 ? SIT_INTERVAL_MS : interval;
+  if (!lastMovedAt) return 0;
+  const untilDue = lastMovedAt + interval - now;
+  if (untilDue <= 0) return 0;
+  const step = Math.max(1000, Math.round(interval / 100));
+  return Math.max(200, Math.min(untilDue, step));
+}
+
+function scheduleHairTick(lastMovedAt, interval, now) {
+  if (typeof setTimeout !== 'function' || typeof clearTimeout !== 'function') return;
+  if (hairTickTimer != null) {
+    clearTimeout(hairTickTimer);
+    hairTickTimer = null;
+  }
+  const wait = nextSitHairTickMs(lastMovedAt, interval, now);
+  if (wait <= 0) return;
+  hairTickTimer = setTimeout(render, wait);
 }
 
 function completeActivity() {
@@ -757,7 +803,6 @@ function render() {
     if (pct != null && (res.hairBoostPct || 0) !== boost) {
       chrome.storage.local.set({ hairBoostPct: boost });
     }
-    renderHair(displayHairPct(pct, boost), res.showHair);
     const showMascot = res.showHair !== false && pct != null;
     const pick = res.activityPick || null;
     let lastMoved = res.lastMovedAt || res.activityDoneAt || 0;
@@ -766,6 +811,13 @@ function render() {
       chrome.storage.local.set({ lastMovedAt: lastMoved });
     }
     const interval = sitIntervalMs(hist, shown, Date.now());
+    const hairPct = displayHairPct(pct, boost, lastMoved, interval);
+    renderHair(hairPct, res.showHair);
+    if (showMascot) scheduleHairTick(lastMoved, interval);
+    else if (hairTickTimer != null && typeof clearTimeout === 'function') {
+      clearTimeout(hairTickTimer);
+      hairTickTimer = null;
+    }
     const due = sitDue(lastMoved, pick, Date.now(), interval);
     const offer = due ? currentOffer(pct, pick, false, res.activityOffer) : null;
     setVeil(showMascot && due);
