@@ -507,16 +507,24 @@ function completeActivity() {
   });
 }
 
-function clampBuddy(x, y, buddy) {
+function buddyBounds(buddy) {
   const w = (buddy && buddy.offsetWidth) || 176;
   const h = (buddy && buddy.offsetHeight) || 160;
   const vw = (typeof window !== 'undefined' && window.innerWidth) || 360;
   const vh = (typeof window !== 'undefined' && window.innerHeight) || 640;
-  const maxX = Math.max(8, vw - w - 8);
-  const maxY = Math.max(8, vh - h - 8);
   return {
-    x: Math.max(8, Math.min(x, maxX)),
-    y: Math.max(8, Math.min(y, maxY)),
+    minX: 8,
+    minY: 8,
+    maxX: Math.max(8, vw - w - 8),
+    maxY: Math.max(8, vh - h - 8),
+  };
+}
+
+function clampBuddy(x, y, buddy) {
+  const b = buddyBounds(buddy);
+  return {
+    x: Math.max(b.minX, Math.min(x, b.maxX)),
+    y: Math.max(b.minY, Math.min(y, b.maxY)),
   };
 }
 
@@ -529,12 +537,51 @@ function placeBuddy(x, y) {
   buddy.style.right = 'auto';
 }
 
+// 乱逛：朝一个方向做大跨度滑行，碰到边就反弹。旧逻辑每 4.8s 只抖 ±18×±14，
+// 看起来像在原地磨蹭。最短步长约是短边的 38%，最长约是对角线的 85%。
+var WANDER_MIN_RATIO = 0.38;
+var WANDER_MAX_RATIO = 0.85;
+var WANDER_INTERVAL_MS = 2800;
+
+function wanderStep(x, y, bounds, rnd, heading) {
+  rnd = typeof rnd === 'function' ? rnd : Math.random;
+  bounds = bounds || { minX: 8, minY: 8, maxX: 176, maxY: 472 };
+  const spanX = Math.max(0, bounds.maxX - bounds.minX);
+  const spanY = Math.max(0, bounds.maxY - bounds.minY);
+  if (spanX < 1 && spanY < 1) {
+    return { x: bounds.minX, y: bounds.minY, heading: heading || 0 };
+  }
+  const short = Math.max(1, Math.min(spanX || spanY, spanY || spanX));
+  const minDist = Math.max(48, short * WANDER_MIN_RATIO);
+  const maxDist = Math.max(minDist + 8, Math.hypot(spanX, spanY) * WANDER_MAX_RATIO);
+  let ang = heading;
+  if (ang == null || !isFinite(ang)) ang = rnd() * Math.PI * 2;
+  else if (rnd() < 0.28) ang = rnd() * Math.PI * 2;
+  else ang += (rnd() - 0.5) * 1.15;
+  const dist = minDist + rnd() * (maxDist - minDist);
+  let nx = x + Math.cos(ang) * dist;
+  let ny = y + Math.sin(ang) * dist;
+  if (nx < bounds.minX) { nx = bounds.minX + (bounds.minX - nx); ang = Math.PI - ang; }
+  if (nx > bounds.maxX) { nx = bounds.maxX - (nx - bounds.maxX); ang = Math.PI - ang; }
+  if (ny < bounds.minY) { ny = bounds.minY + (bounds.minY - ny); ang = -ang; }
+  if (ny > bounds.maxY) { ny = bounds.maxY - (ny - bounds.maxY); ang = -ang; }
+  nx = Math.max(bounds.minX, Math.min(bounds.maxX, nx));
+  ny = Math.max(bounds.minY, Math.min(bounds.maxY, ny));
+  return { x: nx, y: ny, heading: ang };
+}
+
 function wanderBuddy() {
   const buddy = document.getElementById('buddy');
   if (!buddy || buddy.hidden || !buddy.getBoundingClientRect) return;
   if (buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging')) return;
+  const w = typeof window !== 'undefined' ? window : {};
   const r = buddy.getBoundingClientRect();
-  placeBuddy(r.left + (Math.random() * 36 - 18), r.top + (Math.random() * 28 - 14));
+  const fromX = w.__buddyTarget && typeof w.__buddyTarget.x === 'number' ? w.__buddyTarget.x : r.left;
+  const fromY = w.__buddyTarget && typeof w.__buddyTarget.y === 'number' ? w.__buddyTarget.y : r.top;
+  const next = wanderStep(fromX, fromY, buddyBounds(buddy), Math.random, w.__buddyHeading);
+  w.__buddyHeading = next.heading;
+  w.__buddyTarget = { x: next.x, y: next.y };
+  placeBuddy(next.x, next.y);
 }
 
 function initBuddy(pos) {
@@ -568,12 +615,16 @@ function initBuddy(pos) {
       dragging = false;
       if (buddy.classList && buddy.classList.remove) buddy.classList.remove('dragging');
       const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : null;
-      if (r) chrome.storage.local.set({ buddyPos: { x: r.left, y: r.top } });
+      if (r) {
+        const w = typeof window !== 'undefined' ? window : {};
+        w.__buddyTarget = { x: r.left, y: r.top };
+        chrome.storage.local.set({ buddyPos: { x: r.left, y: r.top } });
+      }
     });
   }
   const w = typeof window !== 'undefined' ? window : null;
   if (w && !w.__buddyWander && typeof setInterval === 'function') {
-    w.__buddyWander = setInterval(wanderBuddy, 4800);
+    w.__buddyWander = setInterval(wanderBuddy, WANDER_INTERVAL_MS);
   }
 }
 

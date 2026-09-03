@@ -675,6 +675,57 @@ if (engineProblems.length) {
 }
 console.log('ok  Sit-clock hair finishes in 1h when burning hard, 2h otherwise');
 
+// --- Buddy wander: long smooth glides, not a ±18px fidget ---
+const wanderProblems = [];
+const panel = { minX: 8, minY: 8, maxX: 176, maxY: 472 };
+if (ctx.WANDER_INTERVAL_MS >= 4800) {
+  wanderProblems.push(`wander interval should be faster than the old 4.8s hop, got ${ctx.WANDER_INTERVAL_MS}`);
+}
+const midRnd = () => 0.5;
+const east = ctx.wanderStep(20, 60, panel, midRnd, 0);
+const eastDist = Math.hypot(east.x - 20, east.y - 60);
+if (eastDist <= 18) {
+  wanderProblems.push(`east step should travel farther than the old ±18px fidget, got ${eastDist.toFixed(1)}`);
+}
+if (east.x < panel.minX || east.x > panel.maxX || east.y < panel.minY || east.y > panel.maxY) {
+  wanderProblems.push(`east step left the panel: ${JSON.stringify(east)}`);
+}
+const south = ctx.wanderStep(80, 80, panel, midRnd, Math.PI / 2);
+const southDist = Math.hypot(south.x - 80, south.y - 80);
+if (southDist < 80) {
+  wanderProblems.push(`south step should cross a large share of the panel, got ${southDist.toFixed(1)}`);
+}
+if (south.y <= 80) wanderProblems.push('heading π/2 should move downward');
+const stuck = ctx.wanderStep(8, 8, { minX: 8, minY: 8, maxX: 8, maxY: 8 }, midRnd, 1);
+if (stuck.x !== 8 || stuck.y !== 8) {
+  wanderProblems.push(`zero-span panel should stay put, got ${JSON.stringify(stuck)}`);
+}
+let sum = 0;
+for (let i = 0; i < 24; i++) {
+  const p = ctx.wanderStep(40 + i, 90, panel, () => ((i * 17) % 100) / 100, i * 0.4);
+  if (p.x < panel.minX || p.x > panel.maxX || p.y < panel.minY || p.y > panel.maxY) {
+    wanderProblems.push(`step ${i} left the panel: ${JSON.stringify(p)}`);
+    break;
+  }
+  sum += Math.hypot(p.x - (40 + i), p.y - 90);
+}
+const avgDist = sum / 24;
+if (avgDist < 40) {
+  wanderProblems.push(`average wander step should roam, got ${avgDist.toFixed(1)}px`);
+}
+const htmlCss = readFileSync(resolve(root, 'popup.html'), 'utf8');
+if (!/transition:\s*left 2\.4s/.test(htmlCss) || !/top 2\.4s/.test(htmlCss)) {
+  wanderProblems.push('buddy should CSS-ease left/top so glides are smooth');
+}
+if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
+  wanderProblems.push('dragging should disable the glide transition');
+}
+if (wanderProblems.length) {
+  console.error(wanderProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Buddy wander takes long glides and stays inside the panel');
+
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
 const evil = {
