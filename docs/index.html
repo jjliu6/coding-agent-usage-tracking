@@ -15,7 +15,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- build:root-redirect -->
 <title data-i18n="meta.title">Coding Agents Usage — see your remaining Claude Code, Codex, Cursor, Grok &amp; Gemini quota at a glance</title>
-<meta name="description" data-i18n-content="meta.description" content="A free, open-source Chrome extension that shows how much usage you have left for Claude Code, Codex, Grok Build, Cursor, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account, nothing leaves your browser.">
+<meta name="description" data-i18n-content="meta.description" content="A free, open-source Chrome extension that shows how much usage you have left for Claude Code, Codex, Grok, Cursor, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account, nothing leaves your browser.">
 <link rel="icon" href="/icon-128.png">
 <link rel="canonical" href="{{canonical}}">
 <link rel="alternate" hreflang="en" href="https://token-tracking.philosophie.ai/en/">
@@ -213,7 +213,7 @@
     <div>
       <span class="eyebrow" data-i18n="hero.eyebrow">Free · Open source · Chrome extension</span>
       <h1 data-i18n-html="hero.h1">Know how much AI coding quota you have <span class="hl">left</span> — at a glance.</h1>
-      <p class="lead" data-i18n="hero.lead">One side panel shows your remaining usage for Claude Code, Codex, Cursor, Grok Build, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account linking, no API keys, and nothing leaves your browser. And a little hair mascot that loses hair as you burn quota and makes you stand up now and then.</p>
+      <p class="lead" data-i18n="hero.lead">One side panel shows your remaining usage for Claude Code, Codex, Cursor, Grok, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account linking, no API keys, and nothing leaves your browser. And a little hair mascot that loses hair as you burn quota and makes you stand up now and then.</p>
 
       <div class="cta">
         <a class="btn btn-primary" id="download" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">
@@ -254,7 +254,7 @@
     <div class="label" data-i18n="strip.label">Tracks the usage pages you already use</div>
     <span class="chip"><i style="background:#D97757"></i>Claude Code</span>
     <span class="chip"><i style="background:#5CD6B3"></i>Codex</span>
-    <span class="chip"><i style="background:#B78CF0"></i>Grok Build</span>
+    <span class="chip"><i style="background:#B78CF0"></i>Grok</span>
     <span class="chip"><i style="background:#6E9BF5"></i>Cursor</span>
     <span class="chip"><i style="background:#F49AC1"></i>Grok Bot</span>
     <span class="chip"><i style="background:#3B78E7"></i>Gemini</span>
@@ -325,7 +325,7 @@
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.1"><b>Hair = quota.</b> The mascot floats over the dashboard and loses hair as your average remaining quota burns down. Drag it anywhere, or let it wander.</span></li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.2"><b>Every 2 hours it asks you to move</b> (every hour if an agent burned more than 10% in that window). A frosted veil covers the cards and 2–3 random stretch or rest activities appear, drawn from a pool of 100.</span></li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.3"><b>Pick one, go do it, tap Done.</b> The veil lifts, the hair grows back, and the numbers are readable again.</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.4"><b>Optional move reminder</b> (off by default): a desktop nudge when an agent burns more than 10% of its quota within 2 hours, at most once every 2 hours per agent. It's a nudge, not a lock — an extension can't stop your terminal.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span data-i18n-html="mascot.4"><b>Move reminder</b> (on by default, switch in ⚙): a desktop nudge when an agent burns more than 10% of its quota within 2 hours, at most once every 2 hours per agent. It's a nudge, not a lock — an extension can't stop your terminal.</span></li>
         </ul>
         <div class="note" data-i18n-html="mascot.note"><b>Not your thing?</b> Both the mascot and the move reminder are switches in ⚙. Turn them off and the panel is back to plain numbers.</div>
       </div>
@@ -442,7 +442,7 @@
       </details>
       <details>
         <summary data-i18n="faq.7q">Can I turn off the hair mascot?</summary>
-        <p data-i18n="faq.7a">Yes. Open ⚙ in the panel and untick "Hair mascot". The break-time veil goes with it. The move reminder is a separate switch and is off unless you turn it on.</p>
+        <p data-i18n="faq.7a">Yes. Open ⚙ in the panel and untick "Hair mascot". The break-time veil goes with it. The move reminder is a separate switch in the same menu, on by default.</p>
       </details>
       <details>
         <summary data-i18n="faq.6q">Can I get the very latest unreleased code?</summary>

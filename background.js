@@ -161,7 +161,7 @@ function maybeNotify(a, oldPct, pct) {
   });
 }
 
-// 动一动提醒（moveReminder，默认关）：某个产品在最近 2 小时内烧掉超过 10% 主额度，
+// 动一动提醒（moveReminder，默认开）：某个产品在最近 2 小时内烧掉超过 10% 主额度，
 // 就弹通知让人起来活动。每个产品 2 小时内最多提醒一次（moveNudgedAt 记上次时间）。
 // 只看"上次重置之后"的那段：额度涨回去说明重置过，之前的消耗不算。
 const MOVE_WINDOW_MS = 2 * 3600000;
@@ -185,7 +185,7 @@ function maybeMoveNudge(a, hist) {
   const burn = recentBurn(hist, a.id, now);
   if (burn <= MOVE_DROP_PCT) return;
   chrome.storage.local.get(['moveReminder', 'moveNudgedAt', 'uiLang'], (res) => {
-    if (res.moveReminder !== true) return; // 默认关：明确打开才提醒
+    if (res.moveReminder === false) return; // 默认开：只有在 ⚙ 里明确关掉才不提醒
     const last = (res.moveNudgedAt || {})[a.id] || 0;
     if (now - last < MOVE_COOLDOWN_MS) return;
     applyStoredLang(res.uiLang);

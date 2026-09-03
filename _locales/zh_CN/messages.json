@@ -1,4 +1,4 @@
 {
   "extName": { "message": "Coding Agents 额度" },
-  "extDesc": { "message": "一眼查看 Claude Code、Codex、Grok Build、Cursor、Grok Bot 和 Gemini 的剩余额度。" }
+  "extDesc": { "message": "一眼查看 Claude Code、Codex、Grok、Cursor、Grok Bot 和 Gemini 的剩余额度。" }
 }

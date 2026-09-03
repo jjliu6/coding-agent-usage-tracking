@@ -30,7 +30,7 @@ if (!parsed || parsed.used !== 33) {
 
 const grok = {
   id: 'grok-build',
-  name: 'Grok Build',
+  name: 'Grok',
   color: '#B78CF0',
   scraped_at: Date.now(),
   limits: [{ label: 'Weekly (SuperGrok)', percent_left: 100 - parsed.used, resets_text: parsed.reset }],
@@ -188,12 +188,19 @@ if ((els.settings.innerHTML.match(/data-agent="[^"]+" checked/g) || []).length !
 if (!els.settings.innerHTML.includes('data-agent="grok-bot"') || !els.settings.innerHTML.includes('data-agent="gemini"')) {
   setProblems.push('settings should list Grok Bot and Gemini');
 }
-if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 4) {
-  setProblems.push('autoRefresh, notifyLow, showHair and checkUpdates toggles should default to checked');
+if ((els.settings.innerHTML.match(/data-pref="[^"]+" checked/g) || []).length !== 5) {
+  setProblems.push('autoRefresh, notifyLow, showHair, checkUpdates and moveReminder toggles should default to checked');
 }
-if (!els.settings.innerHTML.includes('data-pref="moveReminder">')) {
-  setProblems.push('moveReminder toggle should exist and default to unchecked (opt-in)');
+if (!els.settings.innerHTML.includes('data-pref="moveReminder" checked')) {
+  setProblems.push('moveReminder toggle should exist and default to checked');
 }
+store.moveReminder = false;
+ctx.render();
+if (els.settings.innerHTML.includes('data-pref="moveReminder" checked')) {
+  setProblems.push('moveReminder=false should render the toggle unchecked');
+}
+delete store.moveReminder;
+ctx.render();
 if (!els.settings.innerHTML.includes('data-pref="checkUpdates"')) setProblems.push('settings should have a checkUpdates toggle');
 store.autoRefresh = false;
 ctx.render();

@@ -170,26 +170,27 @@ if (badge.colors[badge.colors.length - 1] !== '#2e9e6b') {
   problems.push(`badge for 60% should be green, got ${badge.colors[badge.colors.length - 1]}`);
 }
 
-// 7) 低额度通知：只在跌破阈值那一刻触发
+// 7) 低额度通知：只在跌破阈值那一刻触发（动一动提醒默认开，这里只数 low- 通知）
+const lows = () => notifications.filter((n) => n.id.startsWith('low-'));
 const notify = async (pct, t) => { await send(agentData({ id: 'codex', scraped_at: t, limits: [{ label: 'Weekly', percent_left: pct }] })); await tick(10); };
 await notify(12, now + 120000); // 60 → 12：跌破 15
-if (notifications.length !== 1 || !notifications[0].title.includes('12% left')) {
-  problems.push(`crossing 15% should notify once, got ${JSON.stringify(notifications)}`);
+if (lows().length !== 1 || !lows()[0].title.includes('12% left')) {
+  problems.push(`crossing 15% should notify once, got ${JSON.stringify(lows())}`);
 }
 await notify(10, now + 180000); // 12 → 10：没有新的穿越
-if (notifications.length !== 1) problems.push('no crossing → no extra notification');
+if (lows().length !== 1) problems.push('no crossing → no extra notification');
 await notify(4, now + 240000); // 10 → 4：跌破 5
-if (notifications.length !== 2) problems.push('crossing 5% should notify again');
+if (lows().length !== 2) problems.push('crossing 5% should notify again');
 await notify(90, now + 300000); // 重置回 90：不通知
-if (notifications.length !== 2) problems.push('reset upward must not notify');
+if (lows().length !== 2) problems.push('reset upward must not notify');
 await notify(9, now + 360000); // 90 → 9：新周期再次跌破 15
-if (notifications.length !== 3) problems.push('crossing 15% after a reset should notify again');
+if (lows().length !== 3) problems.push('crossing 15% after a reset should notify again');
 
 // 8) notifyLow=false 关掉通知
 await new Promise((r) => ctxObj.chrome.storage.local.set({ notifyLow: false }, r));
 await notify(95, now + 420000);
 await notify(8, now + 480000);
-if (notifications.length !== 3) problems.push('notifyLow=false should suppress notifications');
+if (lows().length !== 3) problems.push('notifyLow=false should suppress notifications');
 await new Promise((r) => ctxObj.chrome.storage.local.set({ notifyLow: true }, r));
 
 // 9) 闹钟：默认创建；autoRefresh=false 清除；true 恢复
@@ -298,33 +299,37 @@ await tick(10);
 if (fetches.length !== fetchesBefore + 1) problems.push('checkUpdates=true should check right away');
 if (!store.updateCheck || store.updateCheck.latest !== '9.9.9') problems.push('re-enabling should store a fresh result');
 
-// 11) 动一动提醒：默认关；打开后 2 小时内烧掉 >10% 才提醒；2 小时冷却；只算重置之后的消耗
+// 11) 动一动提醒：默认开；2 小时内烧掉 >10% 才提醒；2 小时冷却；关掉开关就不提醒；只算重置之后的消耗
 const H = 3600000;
 const T = now + 30 * 86400000; // 远离前面的历史，互不干扰
 const grok = async (pct, t) => { await send(agentData({ id: 'grok-build', scraped_at: t, limits: [{ label: 'Weekly (SuperGrok)', percent_left: pct }] })); await tick(10); };
-const moves = () => notifications.filter((n) => n.id.startsWith('move-'));
+const moves = () => notifications.filter((n) => n.id.startsWith('move-grok-build-')); // 只看这一段的 Grok 提醒
 await grok(90, T);
-await grok(78, T + 1 * H); // 掉 12，但 moveReminder 默认关
-if (moves().length !== 0) problems.push('move reminder must be opt-in (no nudge by default)');
-await new Promise((r) => ctxObj.chrome.storage.local.set({ moveReminder: true }, r));
-await grok(75, T + 1.5 * H); // 窗口内 90→75，掉 15 → 提醒
-if (moves().length !== 1 || !moves()[0].title.includes('15%')) {
-  problems.push(`burning 15% in 2h should nudge once, got ${JSON.stringify(moves())}`);
+await grok(78, T + 1 * H); // 窗口内 90→78，掉 12 → 默认开，直接提醒
+if (moves().length !== 1 || !moves()[0].title.includes('12%')) {
+  problems.push(`move reminder should be on by default: burning 12% in 2h should nudge once, got ${JSON.stringify(moves())}`);
 }
 await grok(60, T + 2 * H); // 冷却中：不再提醒
 if (moves().length !== 1) problems.push('second nudge within the 2h cooldown must be suppressed');
-await grok(58, T + 5 * H); // 窗口 [3h,5h] 里只有这一条 → 数据不够，不提醒
-if (moves().length !== 1) problems.push('a single point in the window is not enough to nudge');
+await new Promise((r) => ctxObj.chrome.storage.local.set({ moveReminder: false }, r));
+await grok(40, T + 3.5 * H); // 窗口 [1.5h,3.5h]：60→40 掉 20，冷却也过了，但开关已关 → 不提醒
+if (moves().length !== 1) problems.push('moveReminder=false must suppress the nudge');
+await new Promise((r) => ctxObj.chrome.storage.local.set({ moveReminder: true }, r));
+await grok(20, T + 5 * H); // 重新打开：窗口 [3h,5h]：40→20 掉 20 → 提醒
+if (moves().length !== 2 || !moves()[1].title.includes('20%')) {
+  problems.push(`re-enabling the switch should nudge again, got ${JSON.stringify(moves())}`);
+}
 await grok(100, T + 6.5 * H); // 额度重置
-await grok(88, T + 7 * H); // 窗口 [5h,7h]：58→100 是重置，只算 100→88 = 12 → 提醒
-if (moves().length !== 2) problems.push(`burn after a reset should count from the reset, got ${JSON.stringify(moves())}`);
-if (!moves()[1].message.includes('vibe coding')) problems.push('nudge body should carry the vibe-coding line');
+await grok(88, T + 7 * H); // 窗口 [5h,7h]：20→100 是重置，只算 100→88 = 12 → 提醒
+if (moves().length !== 3) problems.push(`burn after a reset should count from the reset, got ${JSON.stringify(moves())}`);
+if (!moves()[2].message.includes('vibe coding')) problems.push('nudge body should carry the vibe-coding line');
 if (!store.moveNudgedAt || store.moveNudgedAt['grok-build'] !== T + 7 * H) {
   problems.push(`moveNudgedAt should record the last nudge time, got ${JSON.stringify(store.moveNudgedAt)}`);
 }
-await grok(86, T + 9.5 * H); // 冷却已过，但窗口 [7.5h,9.5h] 里只有这一条
+await grok(86, T + 9.5 * H); // 冷却已过，但窗口 [7.5h,9.5h] 里只有这一条 → 数据不够，不提醒
+if (moves().length !== 3) problems.push('a single point in the window is not enough to nudge');
 await grok(82, T + 10 * H); // 窗口 [8h,10h]：86→82 只掉 4，低于阈值
-if (moves().length !== 2) problems.push('a small burn below 10% must not nudge');
+if (moves().length !== 3) problems.push('a small burn below 10% must not nudge');
 
 if (problems.length) {
   console.error(problems.join('\n'));
@@ -336,7 +341,7 @@ console.log('ok  History dedupe and closeMe behave as before');
 console.log('ok  Badge shows the lowest remaining % across tracked agents');
 console.log('ok  Low-quota notifications fire only on threshold crossings');
 console.log('ok  Hourly quiet check: background tabs only, tracked agents only, toggleable');
-console.log('ok  Move reminder: opt-in, >10% burned in 2h, 2h cooldown, counts from the last reset');
+console.log('ok  Move reminder: on by default, >10% burned in 2h, 2h cooldown, off when unticked, counts from the last reset');
 console.log('ok  Cursor + Grok Bot share one spending-page scrape; missing Grok Bot section is flagged, not failed');
 console.log('ok  Daily update check stores the latest release, survives failures, and is toggleable');
 console.log('\nBackground test passed.');
