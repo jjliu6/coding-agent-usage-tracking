@@ -1,7 +1,13 @@
 name: Landing page
 
-# Publishes docs/ (the product landing page) to GitHub Pages at
-#   https://token-tracking.philosophie.ai/
+# Publishes the product landing page to GitHub Pages at
+#   https://token-tracking.philosophie.ai/       (English; Chinese readers are sent to /zh/)
+#   https://token-tracking.philosophie.ai/en/
+#   https://token-tracking.philosophie.ai/zh/
+#
+# docs/index.html is a template; scripts/build-pages.mjs renders it once per
+# language into dist/site (see that script for the layout), and that folder
+# is what gets deployed.
 #
 # It runs:
 #   - on every push to main that touches docs/ (page copy / design changes);
@@ -21,6 +27,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'scripts/build-pages.mjs'
       - '.github/workflows/pages.yml'
   workflow_run:
     workflows: [Release]
@@ -68,13 +75,20 @@ jobs:
           fi
           echo "Baked:"; cat docs/version.json
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Render the landing page per language (dist/site)
+        run: node scripts/build-pages.mjs
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: dist/site
 
       - id: deployment
         uses: actions/deploy-pages@v4

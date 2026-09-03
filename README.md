@@ -114,12 +114,29 @@ that the Download badge above and the in-panel update check both look at.
 
 ### Landing page
 
-`docs/index.html` is a standalone landing page for people who don't use GitHub:
-<https://token-tracking.philosophie.ai/>. The Landing page workflow
-(`.github/workflows/pages.yml`) publishes the `docs/` folder to GitHub Pages on
-every push to `main` that touches it, and again after every successful Release so
-the version baked into the page is current. The page's Download button uses the
-same `releases/latest/download/coding-agents-usage.zip` link as the README, and it
+`docs/index.html` is the landing page for people who don't use GitHub:
+<https://token-tracking.philosophie.ai/>. It is a template that
+`scripts/build-pages.mjs` renders once per language (`npm run build:pages`
+→ `dist/site`):
+
+| URL | What it serves |
+|---|---|
+| `/` | English, plus a tiny script that sends readers whose browser (or last choice) is Chinese to `/zh/`. Old `?lang=zh` links still work. |
+| `/en/` | English |
+| `/zh/` | Chinese, with the strings from `docs/i18n/zh.mjs` |
+
+Each language is a real file, so a shared `/zh/` link opens Chinese for
+whoever receives it, and search engines index the two versions separately
+(`hreflang`). To change copy, edit the English in `docs/index.html` and the
+matching key in `docs/i18n/zh.mjs`; `npm test` fails if the two drift apart.
+Preview locally with `npm run build:pages && npx serve dist/site` (asset paths
+are absolute, so open the template through a server rather than as a file).
+
+The Landing page workflow (`.github/workflows/pages.yml`) renders and publishes
+the site on every push to `main` that touches `docs/` or the build script, and
+again after every successful Release so the version baked into the page is
+current. The page's Download button uses the same
+`releases/latest/download/coding-agents-usage.zip` link as the README, and it
 fetches the latest version number from GitHub's API when it loads, so it never
 needs a manual update. One-time setup: **Settings → Pages → Source: GitHub Actions**.
 
