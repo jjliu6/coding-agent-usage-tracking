@@ -77,6 +77,7 @@ async function runQuietRefresh() {
 
 // 每天检查一次有没有新版本（checkUpdates，默认开）：向 GitHub 的公开 API 问一句
 // "最新 Release 是哪个版本"，结果存进 updateCheck，面板底部据此显示"有新版本 ↗"。
+// 用户点提示打开落地页（下载 + 安装步骤），不丢到 GitHub Releases。
 // 只请求 GitHub、不带任何账号或用量数据。关掉开关就清掉闹钟和已存的结果。
 function syncUpdateAlarm() {
   if (!chrome.alarms) return;
@@ -104,8 +105,7 @@ async function checkForUpdate(force) {
     const body = await r.json();
     const latest = parseVersionTag(body && body.tag_name);
     if (!latest) throw new Error('no version tag in response');
-    const url = (body && typeof body.html_url === 'string' && /^https:\/\/github\.com\//.test(body.html_url)) ? body.html_url : UPDATE_PAGE;
-    chrome.storage.local.set({ updateCheck: { checkedAt: now, latest, url } });
+    chrome.storage.local.set({ updateCheck: { checkedAt: now, latest, url: UPDATE_PAGE } });
   } catch (e) {
     // 保留上次查到的结果（有新版的提示不该因为一次断网就消失），只记一下失败时间
     chrome.storage.local.set({ updateCheck: Object.assign({}, prev, { failedAt: now }) });

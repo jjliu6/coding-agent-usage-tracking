@@ -112,6 +112,9 @@ if (typeof onMessage !== 'function') {
   process.exit(1);
 }
 
+// update.js 的 const 不会挂到 ctx 对象上
+const UPDATE_PAGE = vm.runInContext('UPDATE_PAGE', ctx);
+
 function send(msg) {
   return new Promise((res) => {
     const ret = onMessage(msg, { tab: { id: 7 } }, res);
@@ -262,8 +265,8 @@ if (fetches.length !== 1 || !fetches[0].url.startsWith('https://api.github.com/r
 if (!store.updateCheck || store.updateCheck.latest !== '9.9.9' || !store.updateCheck.checkedAt) {
   problems.push(`updateCheck should record the latest release, got ${JSON.stringify(store.updateCheck)}`);
 }
-if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/token-police/releases/tag/v9.9.9') {
-  problems.push(`updateCheck should keep the release page url, got ${JSON.stringify(store.updateCheck)}`);
+if (!store.updateCheck || store.updateCheck.url !== UPDATE_PAGE) {
+  problems.push(`updateCheck should store the landing page url, got ${JSON.stringify(store.updateCheck)}`);
 }
 if (!alarms.created.some((a) => a.name === 'updateCheck' && a.periodInMinutes === 1440)) {
   problems.push(`startup should create a daily updateCheck alarm, got ${JSON.stringify(alarms.created)}`);
@@ -279,12 +282,12 @@ await tick(10);
 if (!store.updateCheck || store.updateCheck.latest !== '9.9.9' || !store.updateCheck.failedAt) {
   problems.push(`a failed check must keep the last result and note failedAt, got ${JSON.stringify(store.updateCheck)}`);
 }
-// 非 GitHub 的 html_url 不采用，退回默认发布页
+// GitHub 的 html_url 只用于查版本，用户点击始终去落地页
 fetchReply = { ok: true, json: () => Promise.resolve({ tag_name: 'v9.9.9', html_url: 'https://evil.example/x' }) };
 alarms.listener({ name: 'updateCheck' });
 await tick(10);
-if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/token-police/releases/latest') {
-  problems.push(`non-GitHub html_url should fall back to the releases page, got ${JSON.stringify(store.updateCheck)}`);
+if (!store.updateCheck || store.updateCheck.url !== UPDATE_PAGE) {
+  problems.push(`stored update url should always be the landing page, got ${JSON.stringify(store.updateCheck)}`);
 }
 // 关掉开关：清闹钟、清结果、不再请求
 const clearedBefore = alarms.cleared;

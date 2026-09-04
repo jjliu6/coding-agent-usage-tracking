@@ -45,8 +45,8 @@ it installs the same way, just with a few extra development files in the folder.
 - If a refresh can't read a page (usually because you're signed out), the card says so and links straight to that product's usage page.
 - The bottom of the panel shows the **installed version** (e.g. `v1.2.1`). Once a day it asks GitHub which
   release is the newest; when there is a newer one, that line turns into a **"New version vX.Y.Z available — download ↗"**
-  link. That check is the only network request the extension makes — it carries no account or usage data — and
-  you can turn it off in ⚙.
+  link to the [landing page](https://token-police.philosophie.ai/). That check is the only network request
+  the extension makes — it carries no account or usage data — and you can turn it off in ⚙.
 - No API and no account linking — it reads the numbers straight off each tool's own usage page that you're already logged into.
 - Everything stays local in your browser (`chrome.storage.local`). Your usage data is never sent to any server.
 

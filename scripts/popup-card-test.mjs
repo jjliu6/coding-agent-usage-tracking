@@ -235,7 +235,7 @@ delete store.updateCheck;
 delete store.checkUpdates;
 ctx.render();
 if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push(`version line should show the manifest version, got ${els.ver.innerHTML}`);
-if (!els.ver.innerHTML.includes('github.com/jjliu6/token-police/releases')) verProblems.push('version should link to the releases page');
+if (!els.ver.innerHTML.includes('https://token-police.philosophie.ai/')) verProblems.push('version should link to the landing page');
 if (els.ver.innerHTML.includes('class="new"')) verProblems.push('no check yet → must not claim a new version');
 if (els.ver.innerHTML.includes('up to date')) verProblems.push('no check yet → must not claim up to date');
 store.updateCheck = { checkedAt: Date.now(), latest: '1.2.1', url: 'https://github.com/jjliu6/token-police/releases/tag/v1.2.1' };
@@ -247,8 +247,8 @@ ctx.render();
 if (!els.ver.innerHTML.includes('class="new"') || !els.ver.innerHTML.includes('New version v1.3.0 available')) {
   verProblems.push(`newer release → orange download link, got ${els.ver.innerHTML}`);
 }
-if (!els.ver.innerHTML.includes('href="https://github.com/jjliu6/token-police/releases/tag/v1.3.0"')) {
-  verProblems.push('new-version link should point at that release');
+if (!els.ver.innerHTML.includes('href="https://token-police.philosophie.ai/"')) {
+  verProblems.push('new-version link should point at the landing page');
 }
 if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('installed version stays visible next to the update notice');
 // 用户已经更新到 1.3.0 但存的还是上次的检查结果 → 不该再提示
@@ -262,11 +262,14 @@ ctx.render();
 if (els.ver.innerHTML.includes('class="new"')) verProblems.push('checkUpdates=false → no update notice');
 if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('checkUpdates=false → version itself still shown');
 if (els.settings.innerHTML.includes('data-pref="checkUpdates" checked')) verProblems.push('checkUpdates=false should render unchecked');
-// 存的 url 不是 GitHub 也只会转义、不执行
+// 存的 url 一律不信：即使用户机器上还留着旧的 GitHub / 注入字符串，点击也只去落地页
 store.checkUpdates = true;
 store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: '"><img src=x onerror=alert(1)>' };
 ctx.render();
 if (els.ver.innerHTML.includes('<img')) verProblems.push('update url must be escaped');
+if (!els.ver.innerHTML.includes('href="https://token-police.philosophie.ai/"')) {
+  verProblems.push('stale or hostile stored url must still open the landing page');
+}
 if (!els.credits.innerHTML.includes('Built by') || !els.credits.innerHTML.includes('Junjie Liu') || !els.credits.innerHTML.includes('Philosophie AI')) {
   verProblems.push(`footer credits should name the author, got ${els.credits.innerHTML}`);
 }
