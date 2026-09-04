@@ -52,8 +52,8 @@ eq('defaults to manifest version (newer)', ctx.updateAvailable({ latest: '999.0.
 // 常量指向这个仓库（const 不会挂到 ctx 对象上，要在沙盒里求值取出来）
 const API = vm.runInContext('UPDATE_API', ctx);
 const PAGE = vm.runInContext('UPDATE_PAGE', ctx);
-if (!API.startsWith('https://api.github.com/repos/jjliu6/coding-agent-usage-tracking/')) problems.push(`UPDATE_API wrong: ${API}`);
-if (!PAGE.startsWith('https://github.com/jjliu6/coding-agent-usage-tracking/')) problems.push(`UPDATE_PAGE wrong: ${PAGE}`);
+if (!API.startsWith('https://api.github.com/repos/jjliu6/token-police/')) problems.push(`UPDATE_API wrong: ${API}`);
+if (!PAGE.startsWith('https://github.com/jjliu6/token-police/')) problems.push(`UPDATE_PAGE wrong: ${PAGE}`);
 
 if (problems.length) {
   console.error(problems.join('\n'));
