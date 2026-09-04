@@ -22,6 +22,10 @@
   .buddy.wander .mascot{animation:buddy-bob 2.8s ease-in-out infinite}
   .buddy.dragging .mascot{animation:none}
   @keyframes buddy-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .say{position:absolute;left:10px;right:10px;bottom:calc(100% - 4px);z-index:3;margin:0;padding:7px 10px 9px;background:rgba(255,246,220,.94);color:#3a2a18;font-size:12px;font-weight:650;line-height:1.35;border-radius:14px 14px 14px 5px;box-shadow:0 6px 16px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.01em}
+  .say:after{content:"";position:absolute;left:22px;bottom:-6px;border:6px solid transparent;border-top-color:rgba(255,246,220,.94);border-bottom:0}
+  .say.on{animation:say-pop .28s ease}
+  @keyframes say-pop{from{opacity:0;transform:translateY(5px) scale(.94)}to{opacity:1;transform:none}}
   .acts{margin-top:10px}
   .acts .ttl{font-size:11px;color:var(--ink2);line-height:1.4;margin-bottom:8px}
   .acts .note{font-size:10.5px;color:var(--muted);line-height:1.4;margin:0 0 8px}
@@ -100,6 +104,7 @@
   <div class="ver" id="ver"></div>
   <div class="credits" id="credits"></div>
   <div class="buddy wander" id="buddy" hidden>
+    <p class="say" id="say" hidden></p>
     <span class="mascot" id="hair" hidden></span>
     <div class="acts" id="acts" hidden></div>
   </div>
