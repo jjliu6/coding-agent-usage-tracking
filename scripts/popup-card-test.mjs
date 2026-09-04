@@ -79,6 +79,7 @@ const els = {
   hint: el(),
   hair: el({ hidden: true }),
   buddy: el({ hidden: true }),
+  say: el({ hidden: true }),
   acts: el({ hidden: true }),
   ver: el(),
   credits: el(),
@@ -678,8 +679,11 @@ console.log('ok  Sit-clock hair finishes in 1h when burning hard, 2h otherwise')
 // --- Buddy wander: long smooth glides, not a ±18px fidget ---
 const wanderProblems = [];
 const panel = { minX: 8, minY: 8, maxX: 176, maxY: 472 };
-if (ctx.WANDER_INTERVAL_MS >= 4800) {
-  wanderProblems.push(`wander interval should be faster than the old 4.8s hop, got ${ctx.WANDER_INTERVAL_MS}`);
+if (ctx.WANDER_GLIDE_MS !== 7200) {
+  wanderProblems.push(`glide should be 7.2s so a panel-wide roam is unhurried, got ${ctx.WANDER_GLIDE_MS}`);
+}
+if (ctx.WANDER_INTERVAL_MS < ctx.WANDER_GLIDE_MS || ctx.WANDER_INTERVAL_MS > ctx.WANDER_GLIDE_MS + 2000) {
+  wanderProblems.push(`interval should sit just after the glide (${ctx.WANDER_GLIDE_MS}–${ctx.WANDER_GLIDE_MS + 2000}), got ${ctx.WANDER_INTERVAL_MS}`);
 }
 const midRnd = () => 0.5;
 const east = ctx.wanderStep(20, 60, panel, midRnd, 0);
@@ -736,17 +740,73 @@ if (layoutProblems.length) {
 }
 console.log('ok  Side panel footer can scroll and wrap instead of clipping');
 
-if (!/transition:\s*left 2\.4s/.test(htmlCss) || !/top 2\.4s/.test(htmlCss)) {
-  wanderProblems.push('buddy should CSS-ease left/top so glides are smooth');
+if (!/transition:\s*left 7\.2s/.test(htmlCss) || !/top 7\.2s/.test(htmlCss)) {
+  wanderProblems.push('buddy CSS glide should be 7.2s so it matches WANDER_GLIDE_MS');
 }
 if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
   wanderProblems.push('dragging should disable the glide transition');
+}
+if (!/background:rgba\(20,22,28,\.2[0-8]\)/.test(htmlCss) || !/backdrop-filter:blur\(/.test(htmlCss)) {
+  wanderProblems.push('buddy card should be a frosted glass so quota text shows through');
+}
+if (!/\.say\{[^}]*font-size:10px/.test(htmlCss) || /\.say\{[^}]*position:absolute/.test(htmlCss) || /bottom:calc\(100%/.test(htmlCss) || /\.say:after/.test(htmlCss)) {
+  wanderProblems.push('say line should sit inside the plate, not float outside as a balloon');
 }
 if (wanderProblems.length) {
   console.error(wanderProblems.join('\n'));
   process.exit(1);
 }
 console.log('ok  Buddy wander takes long glides and stays inside the panel');
+
+// --- Occasional mouth blurts, stage + language aware ---
+const sayProblems = [];
+['high', 'mid', 'low', 'due'].forEach((stage) => {
+  ['zh', 'en'].forEach((lang) => {
+    const pool = ctx.sayPool(stage, lang);
+    if (pool.length < 8) sayProblems.push(`${stage}/${lang} should have ≥8 lines, got ${pool.length}`);
+    if (new Set(pool).size !== pool.length) sayProblems.push(`${stage}/${lang} has duplicate lines`);
+    if (lang === 'zh' && pool.some((s) => !/[\u4e00-\u9fff]/.test(s))) {
+      sayProblems.push(`${stage}/zh should be spoken Chinese: ${JSON.stringify(pool)}`);
+    }
+    if (lang === 'en' && pool.some((s) => /[\u4e00-\u9fff]/.test(s) || !s.trim())) {
+      sayProblems.push(`${stage}/en should be English-only spoken lines`);
+    }
+  });
+});
+if (ctx.sayStage(80, false) !== 'high' || ctx.sayStage(30, false) !== 'mid' || ctx.sayStage(10, false) !== 'low') {
+  sayProblems.push('sayStage should follow hair high/mid/low');
+}
+if (ctx.sayStage(80, true) !== 'due') sayProblems.push('due sit clock should use the stretch lines');
+const pickedSay = ctx.pickSay('high', 'zh', [], () => 0);
+if (ctx.sayPool('high', 'zh').indexOf(pickedSay) === -1) sayProblems.push('pickSay should return a high/zh line');
+const avoided = ctx.sayPool('high', 'zh')[0];
+const next = ctx.pickSay('high', 'zh', [avoided], () => 0);
+if (next === avoided) sayProblems.push('pickSay should skip the last line when others exist');
+store.showHair = true;
+store.lastMovedAt = Date.now();
+ctx.render();
+const said = ctx.blurtSay(80, false, () => 0);
+if (!said) sayProblems.push('blurtSay should return a line when the buddy is visible');
+if (els.say.hidden) sayProblems.push('blurtSay should unhide the bubble');
+if (els.say.textContent !== said) sayProblems.push(`bubble text should match, got ${JSON.stringify(els.say.textContent)}`);
+if (els.say.textContent.includes('<')) sayProblems.push('say must use textContent, not HTML');
+ctx.blurtSay(10, false, () => 0);
+if (ctx.sayPool('low', 'en').indexOf(els.say.textContent) === -1 && ctx.sayPool('low', 'zh').indexOf(els.say.textContent) === -1) {
+  sayProblems.push(`10% hair should pick a low-stage line, got ${JSON.stringify(els.say.textContent)}`);
+}
+ctx.hideSay();
+if (!els.say.hidden) sayProblems.push('hideSay should hide the bubble');
+store.showHair = false;
+ctx.render();
+if (!els.say.hidden) sayProblems.push('hiding the mascot should hide the bubble');
+delete store.showHair;
+store.lastMovedAt = Date.now();
+ctx.render();
+if (sayProblems.length) {
+  console.error(sayProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Mascot occasionally blurts stage-aware spoken lines');
 
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];

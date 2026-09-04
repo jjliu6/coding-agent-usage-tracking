@@ -539,9 +539,11 @@ function placeBuddy(x, y) {
 
 // 乱逛：朝一个方向做大跨度滑行，碰到边就反弹。旧逻辑每 4.8s 只抖 ±18×±14，
 // 看起来像在原地磨蹭。最短步长约是短边的 38%，最长约是对角线的 85%。
+// 滑行约 7.2s（CSS 里同期），8.4s 开下一程，留一秒落稳。2.4s/2.8s 会整屏闪过去。
 var WANDER_MIN_RATIO = 0.38;
 var WANDER_MAX_RATIO = 0.85;
-var WANDER_INTERVAL_MS = 2800;
+var WANDER_GLIDE_MS = 7200;
+var WANDER_INTERVAL_MS = 8400;
 
 function wanderStep(x, y, bounds, rnd, heading) {
   rnd = typeof rnd === 'function' ? rnd : Math.random;
@@ -588,6 +590,9 @@ function initBuddy(pos) {
   const buddy = document.getElementById('buddy');
   if (!buddy || (buddy.dataset && buddy.dataset.ready)) return;
   if (buddy.dataset) buddy.dataset.ready = '1';
+  if (buddy.style) {
+    buddy.style.transition = `left ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1), top ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1)`;
+  }
   if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') placeBuddy(pos.x, pos.y);
   if (buddy.addEventListener) {
     let dragging = false, ox = 0, oy = 0;
@@ -646,13 +651,130 @@ function renderActs(pct, pick, due, offer) {
   wrap.innerHTML = `<p class="ttl">${t('actHint')}</p>${btns}`;
 }
 
+// 嘴里偶尔冒一句。按发量 / 该不该动 换词库，中英两套口语，不连着重复。
+var SAYS = {
+  high: {
+    zh: ['加油，vibe 住', '这波能成', '额度还在，大胆写', '今天额度自由', '再推一把就收工', 'agent 比你还卷', '写就完了', '灵感在，发也在', '来都来了'],
+    en: ['vibe coding. don\'t die', 'this one\'s gonna slap', 'quota\'s fat, go wild', 'living that remaining-% life', 'one more push then ship', 'the agent is grinding harder than you', 'just write the thing', 'ideas in, hair in', 'you\'re already here'],
+  },
+  mid: {
+    zh: ['再问一句就掉一根', '提示词越写越长，发际线不是', '喝口水，代码又不会跑', '腰开始抗议了', '别坐成一尊佛', 'token 在烧，人别废', '先保存，再站起来', '这需求我看行，椅子不行'],
+    en: ['one more prompt, one more follicle', 'prompt got longer. hairline didn\'t', 'sip water. the code will wait', 'your lumbar just filed a ticket', 'you\'ve become furniture', 'tokens burning, human optional?', 'save, then stand', 'the spec is fine. the chair isn\'t'],
+  },
+  low: {
+    zh: ['你不休息，我先秃', '发比 token 金贵', '我快见底了你还坐着', '低空飞过重置日', '留点发过年行不行', '再熬我就剩刘海了', '额度和人都见底了', '风好大，我头皮冷'],
+    en: ['you stay seated, i go bald', 'hair > tokens. fight me', 'i\'m almost gone and you\'re still typing', 'skating into reset on fumes', 'leave me some hair for the holidays', 'one more all-nighter and it\'s just bangs', 'quota\'s empty. so is my scalp', 'breeze on the scalp. uncool'],
+  },
+  due: {
+    zh: ['站起来晃两下嘛', '草还在外面长着呢', '动一动，我想留点发', '去做那个，别光点着玩', '起来，vibe 也要呼吸', '摸摸草，字面意思', '椅子会想你的，去吧', '先动，再继续造'],
+    en: ['stand up. wiggle. please', 'grass is still growing out there', 'move. i\'d like to keep these', 'go do the thing. don\'t just hover', 'vibe needs oxygen too', 'touch grass. the plant', 'the chair will miss you. go', 'stretch first, then keep building'],
+  },
+};
+var SAY_FIRST_MS = 2200;
+var SAY_MIN_GAP_MS = 18000;
+var SAY_MAX_GAP_MS = 32000;
+var SAY_HOLD_MS = 4400;
+var sayCtx = { pct: 80, due: false };
+var lastSays = [];
+var sayTimer = null;
+var sayHideTimer = null;
+var sayArmed = false;
+
+function sayStage(pct, due) {
+  if (due) return 'due';
+  return activityStage(pct == null ? 100 : pct);
+}
+
+function sayPool(stage, lang) {
+  const pack = SAYS[stage] || SAYS.high;
+  return ((pack[lang === 'zh' ? 'zh' : 'en']) || []).slice();
+}
+
+function pickSay(stage, lang, avoid, rnd) {
+  rnd = typeof rnd === 'function' ? rnd : Math.random;
+  const pool = sayPool(stage, lang);
+  const blocked = avoid || [];
+  const open = pool.filter((s) => blocked.indexOf(s) === -1);
+  const src = open.length ? open : pool;
+  if (!src.length) return '';
+  return src[Math.floor(rnd() * src.length)];
+}
+
+function hideSay() {
+  const el = document.getElementById('say');
+  if (el) {
+    el.hidden = true;
+    el.textContent = '';
+    if (el.classList && el.classList.remove) el.classList.remove('on');
+  }
+  if (sayHideTimer != null && typeof clearTimeout === 'function') {
+    clearTimeout(sayHideTimer);
+    sayHideTimer = null;
+  }
+}
+
+function blurtSay(pct, due, rnd) {
+  const buddy = document.getElementById('buddy');
+  const el = document.getElementById('say');
+  if (!buddy || buddy.hidden || !el) return '';
+  if (buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging')) return '';
+  const line = pickSay(sayStage(pct, due), currentLang(), lastSays, rnd);
+  if (!line) return '';
+  lastSays.push(line);
+  if (lastSays.length > 3) lastSays.shift();
+  el.textContent = line;
+  el.hidden = false;
+  if (el.classList && el.classList.add) el.classList.add('on');
+  if (typeof setTimeout === 'function') {
+    if (sayHideTimer != null) clearTimeout(sayHideTimer);
+    sayHideTimer = setTimeout(() => {
+      hideSay();
+      scheduleSay(false);
+    }, SAY_HOLD_MS);
+  }
+  return line;
+}
+
+function scheduleSay(first) {
+  if (typeof setTimeout !== 'function') return;
+  if (sayTimer != null) clearTimeout(sayTimer);
+  const wait = first ? SAY_FIRST_MS : SAY_MIN_GAP_MS + Math.random() * (SAY_MAX_GAP_MS - SAY_MIN_GAP_MS);
+  sayTimer = setTimeout(() => {
+    if (!first && Math.random() < 0.18) {
+      scheduleSay(false);
+      return;
+    }
+    blurtSay(sayCtx.pct, sayCtx.due);
+  }, wait);
+}
+
+function armSay(pct, due, show) {
+  sayCtx.pct = pct;
+  sayCtx.due = !!due;
+  if (!show) {
+    sayArmed = false;
+    if (sayTimer != null && typeof clearTimeout === 'function') clearTimeout(sayTimer);
+    sayTimer = null;
+    hideSay();
+    return;
+  }
+  if (!sayArmed) {
+    sayArmed = true;
+    scheduleSay(true);
+  }
+}
+
 function renderBuddy(show, pct, pick, due, pos, offer) {
   const buddy = document.getElementById('buddy');
   if (!buddy) return;
   buddy.hidden = !show;
-  if (!show) return;
+  if (!show) {
+    armSay(pct, due, false);
+    return;
+  }
   initBuddy(pos);
   renderActs(pct, pick, due, offer);
+  armSay(pct, due, true);
 }
 
 function setVeil(on) {
@@ -872,7 +994,7 @@ function render() {
     const due = sitDue(lastMoved, pick, Date.now(), interval);
     const offer = due ? currentOffer(pct, pick, false, res.activityOffer) : null;
     setVeil(showMascot && due);
-    renderBuddy(showMascot, pct, pick, due, res.buddyPos, offer);
+    renderBuddy(showMascot, hairPct, pick, due, res.buddyPos, offer);
     renderVersion(res.checkUpdates === false ? null : res.updateCheck);
     renderCredits();
     const any = shown.some((id) => map[id]);
