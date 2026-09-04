@@ -539,9 +539,11 @@ function placeBuddy(x, y) {
 
 // 乱逛：朝一个方向做大跨度滑行，碰到边就反弹。旧逻辑每 4.8s 只抖 ±18×±14，
 // 看起来像在原地磨蹭。最短步长约是短边的 38%，最长约是对角线的 85%。
+// 滑行约 7.2s（CSS 里同期），8.4s 开下一程，留一秒落稳。2.4s/2.8s 会整屏闪过去。
 var WANDER_MIN_RATIO = 0.38;
 var WANDER_MAX_RATIO = 0.85;
-var WANDER_INTERVAL_MS = 2800;
+var WANDER_GLIDE_MS = 7200;
+var WANDER_INTERVAL_MS = 8400;
 
 function wanderStep(x, y, bounds, rnd, heading) {
   rnd = typeof rnd === 'function' ? rnd : Math.random;
@@ -588,6 +590,9 @@ function initBuddy(pos) {
   const buddy = document.getElementById('buddy');
   if (!buddy || (buddy.dataset && buddy.dataset.ready)) return;
   if (buddy.dataset) buddy.dataset.ready = '1';
+  if (buddy.style) {
+    buddy.style.transition = `left ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1), top ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1)`;
+  }
   if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') placeBuddy(pos.x, pos.y);
   if (buddy.addEventListener) {
     let dragging = false, ox = 0, oy = 0;

@@ -678,8 +678,11 @@ console.log('ok  Sit-clock hair finishes in 1h when burning hard, 2h otherwise')
 // --- Buddy wander: long smooth glides, not a ±18px fidget ---
 const wanderProblems = [];
 const panel = { minX: 8, minY: 8, maxX: 176, maxY: 472 };
-if (ctx.WANDER_INTERVAL_MS >= 4800) {
-  wanderProblems.push(`wander interval should be faster than the old 4.8s hop, got ${ctx.WANDER_INTERVAL_MS}`);
+if (ctx.WANDER_GLIDE_MS !== 7200) {
+  wanderProblems.push(`glide should be 7.2s so a panel-wide roam is unhurried, got ${ctx.WANDER_GLIDE_MS}`);
+}
+if (ctx.WANDER_INTERVAL_MS < ctx.WANDER_GLIDE_MS || ctx.WANDER_INTERVAL_MS > ctx.WANDER_GLIDE_MS + 2000) {
+  wanderProblems.push(`interval should sit just after the glide (${ctx.WANDER_GLIDE_MS}–${ctx.WANDER_GLIDE_MS + 2000}), got ${ctx.WANDER_INTERVAL_MS}`);
 }
 const midRnd = () => 0.5;
 const east = ctx.wanderStep(20, 60, panel, midRnd, 0);
@@ -714,8 +717,8 @@ if (avgDist < 40) {
   wanderProblems.push(`average wander step should roam, got ${avgDist.toFixed(1)}px`);
 }
 const htmlCss = readFileSync(resolve(root, 'popup.html'), 'utf8');
-if (!/transition:\s*left 2\.4s/.test(htmlCss) || !/top 2\.4s/.test(htmlCss)) {
-  wanderProblems.push('buddy should CSS-ease left/top so glides are smooth');
+if (!/transition:\s*left 7\.2s/.test(htmlCss) || !/top 7\.2s/.test(htmlCss)) {
+  wanderProblems.push('buddy CSS glide should be 7.2s so it matches WANDER_GLIDE_MS');
 }
 if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
   wanderProblems.push('dragging should disable the glide transition');
