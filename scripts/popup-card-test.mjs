@@ -146,7 +146,7 @@ const problems = [];
 
 if (ctx.currentLang() !== 'en') problems.push(`default language should be en, got ${ctx.currentLang()}`);
 if (uiLanguageCalls !== 0) problems.push('dashboard language must not follow chrome.i18n.getUILanguage');
-if (els['brand-name'].textContent !== 'CODING AGENTS') {
+if (els['brand-name'].textContent !== 'TOKEN POLICE') {
   problems.push(`default brand should be English, got ${JSON.stringify(els['brand-name'].textContent)}`);
 }
 if (els.legend.textContent !== 'number = remaining') {
@@ -234,19 +234,19 @@ delete store.updateCheck;
 delete store.checkUpdates;
 ctx.render();
 if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push(`version line should show the manifest version, got ${els.ver.innerHTML}`);
-if (!els.ver.innerHTML.includes('github.com/jjliu6/coding-agent-usage-tracking/releases')) verProblems.push('version should link to the releases page');
+if (!els.ver.innerHTML.includes('github.com/jjliu6/token-police/releases')) verProblems.push('version should link to the releases page');
 if (els.ver.innerHTML.includes('class="new"')) verProblems.push('no check yet → must not claim a new version');
 if (els.ver.innerHTML.includes('up to date')) verProblems.push('no check yet → must not claim up to date');
-store.updateCheck = { checkedAt: Date.now(), latest: '1.2.1', url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.2.1' };
+store.updateCheck = { checkedAt: Date.now(), latest: '1.2.1', url: 'https://github.com/jjliu6/token-police/releases/tag/v1.2.1' };
 ctx.render();
 if (!els.ver.innerHTML.includes('up to date')) verProblems.push(`same version → "up to date", got ${els.ver.innerHTML}`);
 if (els.ver.innerHTML.includes('class="new"')) verProblems.push('same version → no new-version link');
-store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.3.0' };
+store.updateCheck = { checkedAt: Date.now(), latest: '1.3.0', url: 'https://github.com/jjliu6/token-police/releases/tag/v1.3.0' };
 ctx.render();
 if (!els.ver.innerHTML.includes('class="new"') || !els.ver.innerHTML.includes('New version v1.3.0 available')) {
   verProblems.push(`newer release → orange download link, got ${els.ver.innerHTML}`);
 }
-if (!els.ver.innerHTML.includes('href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v1.3.0"')) {
+if (!els.ver.innerHTML.includes('href="https://github.com/jjliu6/token-police/releases/tag/v1.3.0"')) {
   verProblems.push('new-version link should point at that release');
 }
 if (!els.ver.innerHTML.includes('>v1.2.1<')) verProblems.push('installed version stays visible next to the update notice');
@@ -570,6 +570,162 @@ if (growProblems.length) {
 }
 console.log('ok  Completing a move restores hair to 100%; later burns thin it again');
 
+// --- Sit-clock hair engine: 1h hard-burn / 2h normal, quota is a ceiling ---
+const engineProblems = [];
+const t0 = 1_700_000_000_000;
+if (ctx.sitHairPct(0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
+  engineProblems.push('no lastMovedAt should leave the sit clock at 100');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
+  engineProblems.push('just-moved sit clock should be 100');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + 30 * 60000) !== 50) {
+  engineProblems.push('30 min into a 1h clock should be 50');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 0) {
+  engineProblems.push('1h clock should hit 0 when the reminder is due');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 50) {
+  engineProblems.push('1h into a 2h clock should be 50 — hair is not gone yet');
+}
+if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_MS) !== 0) {
+  engineProblems.push('2h clock should hit 0 when the reminder is due');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
+  engineProblems.push('just after a move, sit clock should keep the restored 100');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0 + 30 * 60000) !== 50) {
+  engineProblems.push('restored hair should be half gone 30 min into a 1h clock');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 0) {
+  engineProblems.push('restored hair should be gone when the 1h reminder fires');
+}
+if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 50) {
+  engineProblems.push('same 1h sit on a 2h clock should still show 50% hair');
+}
+if (ctx.displayHairPct(10, 0, t0, ctx.SIT_INTERVAL_MS, t0) !== 10) {
+  engineProblems.push('quota should cap hair when there is no exercise boost');
+}
+if (ctx.displayHairPct(80, 20, t0, ctx.SIT_INTERVAL_BURN_MS, t0 + 6 * 60000) !== 90) {
+  engineProblems.push('6 min into 1h (90% sit) should still show 90, not wait on quota');
+}
+const tick1h = ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_BURN_MS, t0);
+if (tick1h !== 36000) {
+  engineProblems.push(`1h clock should tick every 36s (1%), got ${tick1h}`);
+}
+const tick2h = ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_MS, t0);
+if (tick2h !== 72000) {
+  engineProblems.push(`2h clock should tick every 72s (1%), got ${tick2h}`);
+}
+if (ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 0) {
+  engineProblems.push('no hair tick after the clock has run out');
+}
+const lateWait = ctx.nextSitHairTickMs(t0, ctx.SIT_INTERVAL_BURN_MS, t0 + ctx.SIT_INTERVAL_BURN_MS - 8000);
+if (lateWait !== 8000) {
+  engineProblems.push(`last tick should land on due (8s left), got ${lateWait}`);
+}
+
+store.agents = { 'grok-build': grok };
+store.history = [];
+store.hairBoostPct = 33;
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_BURN_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
+delete store.activityPick;
+delete store.activityOffer;
+ctx.render();
+if (strandsOn(els.hair.innerHTML) !== 12) {
+  engineProblems.push(`1h into a 2h clock (no hard burn) should show ~12 strands, got ${strandsOn(els.hair.innerHTML)}`);
+}
+if (!els.hair.title.includes('50%')) {
+  engineProblems.push(`1h into a 2h clock should read 50%, got ${JSON.stringify(els.hair.title)}`);
+}
+
+const nowHard = Date.now();
+store.history = [
+  { id: 'grok-build', t: nowHard - 90 * 60000, pct: 82 },
+  { id: 'grok-build', t: nowHard - 2 * 60000, pct: 67 },
+];
+store.lastMovedAt = nowHard - ctx.SIT_INTERVAL_BURN_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
+store.activityOffer = null;
+ctx.render();
+if (ctx.sitIntervalMs(store.history, ['grok-build'], nowHard) !== ctx.SIT_INTERVAL_BURN_MS) {
+  engineProblems.push('15% burn in 2h should switch the sit clock to 1 hour');
+}
+if (strandsOn(els.hair.innerHTML) !== 0 || strandsOff(els.hair.innerHTML) !== 24) {
+  engineProblems.push(`1h hard-burn clock should finish all 24 strands, on=${strandsOn(els.hair.innerHTML)} off=${strandsOff(els.hair.innerHTML)}`);
+}
+if (!els.hair.title.includes('0%')) {
+  engineProblems.push(`bald tooltip should be 0% when the 1h reminder fires, got ${JSON.stringify(els.hair.title)}`);
+}
+if (els.acts.hidden) engineProblems.push('1h hard-burn clock should also bring the move reminder');
+if (els.veil.hidden) engineProblems.push('1h hard-burn clock should frost the cards when hair is gone');
+
+store.history = [];
+store.agents = { 'grok-build': grok };
+delete store.hairBoostPct;
+delete store.activityPick;
+delete store.activityDoneAt;
+delete store.activityOffer;
+store.lastMovedAt = Date.now();
+ctx.render();
+if (engineProblems.length) {
+  console.error(engineProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Sit-clock hair finishes in 1h when burning hard, 2h otherwise');
+
+// --- Buddy wander: long smooth glides, not a ±18px fidget ---
+const wanderProblems = [];
+const panel = { minX: 8, minY: 8, maxX: 176, maxY: 472 };
+if (ctx.WANDER_INTERVAL_MS >= 4800) {
+  wanderProblems.push(`wander interval should be faster than the old 4.8s hop, got ${ctx.WANDER_INTERVAL_MS}`);
+}
+const midRnd = () => 0.5;
+const east = ctx.wanderStep(20, 60, panel, midRnd, 0);
+const eastDist = Math.hypot(east.x - 20, east.y - 60);
+if (eastDist <= 18) {
+  wanderProblems.push(`east step should travel farther than the old ±18px fidget, got ${eastDist.toFixed(1)}`);
+}
+if (east.x < panel.minX || east.x > panel.maxX || east.y < panel.minY || east.y > panel.maxY) {
+  wanderProblems.push(`east step left the panel: ${JSON.stringify(east)}`);
+}
+const south = ctx.wanderStep(80, 80, panel, midRnd, Math.PI / 2);
+const southDist = Math.hypot(south.x - 80, south.y - 80);
+if (southDist < 80) {
+  wanderProblems.push(`south step should cross a large share of the panel, got ${southDist.toFixed(1)}`);
+}
+if (south.y <= 80) wanderProblems.push('heading π/2 should move downward');
+const stuck = ctx.wanderStep(8, 8, { minX: 8, minY: 8, maxX: 8, maxY: 8 }, midRnd, 1);
+if (stuck.x !== 8 || stuck.y !== 8) {
+  wanderProblems.push(`zero-span panel should stay put, got ${JSON.stringify(stuck)}`);
+}
+let sum = 0;
+for (let i = 0; i < 24; i++) {
+  const p = ctx.wanderStep(40 + i, 90, panel, () => ((i * 17) % 100) / 100, i * 0.4);
+  if (p.x < panel.minX || p.x > panel.maxX || p.y < panel.minY || p.y > panel.maxY) {
+    wanderProblems.push(`step ${i} left the panel: ${JSON.stringify(p)}`);
+    break;
+  }
+  sum += Math.hypot(p.x - (40 + i), p.y - 90);
+}
+const avgDist = sum / 24;
+if (avgDist < 40) {
+  wanderProblems.push(`average wander step should roam, got ${avgDist.toFixed(1)}px`);
+}
+const htmlCss = readFileSync(resolve(root, 'popup.html'), 'utf8');
+if (!/transition:\s*left 2\.4s/.test(htmlCss) || !/top 2\.4s/.test(htmlCss)) {
+  wanderProblems.push('buddy should CSS-ease left/top so glides are smooth');
+}
+if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
+  wanderProblems.push('dragging should disable the glide transition');
+}
+if (wanderProblems.length) {
+  console.error(wanderProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Buddy wander takes long glides and stays inside the panel');
+
 // --- Scraped text is escaped before hitting innerHTML ---
 const escProblems = [];
 const evil = {
@@ -638,7 +794,7 @@ if (!htmlZh.includes('>剩余<')) zhProblems.push('Chinese card should say 剩�
 if (htmlZh.includes('>left<')) zhProblems.push('Chinese card should not say left');
 if (els.lang.textContent !== 'EN') zhProblems.push(`Chinese UI should show an EN button, got ${JSON.stringify(els.lang.textContent)}`);
 if (els.refresh.textContent !== '刷新') zhProblems.push(`Chinese refresh label should be 刷新, got ${JSON.stringify(els.refresh.textContent)}`);
-if (els['brand-name'].textContent !== 'CODING AGENTS 额度') {
+if (els['brand-name'].textContent !== 'TOKEN POLICE') {
   zhProblems.push(`Chinese brand, got ${JSON.stringify(els['brand-name'].textContent)}`);
 }
 if (popupCtx.document.documentElement.lang !== 'zh') {

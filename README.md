@@ -1,30 +1,30 @@
-# coding-agent-usage-tracking
+# Token Police
 
 A Chrome (Manifest V3) browser extension that shows your remaining usage for
 **Claude Code, Codex, Grok, Cursor, Grok Bot and Gemini** at a glance — in one popup.
 
-![The Coding Agents Usage popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, Cursor, Grok Bot, and Gemini](docs/dashboard.webp)
+![The Token Police popup showing quota, resets, and burn-rate for Claude Code, Codex, Grok, Cursor, Grok Bot, and Gemini](docs/dashboard.webp)
 
 <sub>Example popup with sample data.</sub>
 
 ## Download
 
-[![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/coding-agent-usage-tracking?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)
-[![Total downloads](https://img.shields.io/github/downloads/jjliu6/coding-agent-usage-tracking/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/coding-agent-usage-tracking/releases)
+[![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/token-police?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/token-police/releases/latest/download/token-police.zip)
+[![Total downloads](https://img.shields.io/github/downloads/jjliu6/token-police/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/token-police/releases)
 
 The version on the button is the one you get. No GitHub account, no git, no build step —
-[download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip),
+[download the latest release](https://github.com/jjliu6/token-police/releases/latest/download/token-police.zip),
 unzip it, and load the folder in Chrome. See [Install](#install) below. Every release also ships a
-versioned copy (`coding_agents_usage-<version>.zip`) on the
-[releases page](https://github.com/jjliu6/coding-agent-usage-tracking/releases) if you want to keep
+versioned copy (`token_police-<version>.zip`) on the
+[releases page](https://github.com/jjliu6/token-police/releases) if you want to keep
 several versions around.
 
 **Not a GitHub person?** The same download plus step-by-step install instructions live on the
-[product landing page](https://token-tracking.philosophie.ai/) — send that link to
+[product landing page](https://token-police.philosophie.ai/) — send that link to
 anyone who just wants the extension. It shows the same latest version as the button above.
 
 <sub>Want the newest unreleased code instead? Grab the
-[source zip of `main`](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip) —
+[source zip of `main`](https://github.com/jjliu6/token-police/archive/refs/heads/main.zip) —
 it installs the same way, just with a few extra development files in the folder.</sub>
 
 ## What it does
@@ -38,7 +38,7 @@ it installs the same way, just with a few extra development files in the folder.
 - Once it has a few hours of history, it estimates your burn rate and warns when you'll run out **before** the next reset. Each card also draws a 7-day sparkline of your remaining quota.
 - The toolbar badge always shows the **lowest remaining %** across your tracked agents (green / amber / red), so you don't even need to open the panel.
 - When a tracked agent drops below 15% (and again below 5%) remaining, you get a desktop notification — togglable in settings.
-- A tiny **hair mascot** floats on the dashboard, loses hair as your average remaining quota burns down, and can be dragged or left to wander — togglable in settings. Every 2 hours (1 hour if a tracked agent burned more than 10% in that window) it asks you to move: a frosted veil covers the quota cards and 2–3 random stretch / rest activities appear from a pool of 100. Pick one, go do it, tap Done — the veil lifts, hair grows back, and the numbers are readable again.
+- A tiny **hair mascot** floats on the dashboard, loses hair on the sit clock (2 hours normally, 1 hour if a tracked agent burned more than 10% in that window; remaining quota is a ceiling), and can be dragged or left to wander — togglable in settings. When the clock runs out it asks you to move: a frosted veil covers the quota cards and 2–3 random stretch / rest activities appear from a pool of 100. Pick one, go do it, tap Done — the veil lifts, hair grows back, and the numbers are readable again.
 - **Move reminder** (on by default, switch in ⚙): when a tracked agent burns more than 10% of its quota within 2 hours, you get a nudge to stand up and touch some grass — at most once every 2 hours per agent. It is a nudge, not a lock: a browser extension can't stop your terminal.
 - An hourly **quiet auto-check** re-scrapes your tracked agents in background tabs without stealing focus (togglable). Pages that won't render in a background tab (can happen with Cursor/Grok) just keep their last data — click Refresh for a guaranteed update.
 - The ⚙ button lets you pick which agents to track — unchecked ones are skipped by Refresh and hidden from the dashboard.
@@ -52,7 +52,7 @@ it installs the same way, just with a few extra development files in the folder.
 
 ## Install
 
-1. **[Download the extension as a .zip](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip)**
+1. **[Download the extension as a .zip](https://github.com/jjliu6/token-police/releases/latest/download/token-police.zip)**
    (or clone this repository, if you prefer git).
 2. **Unzip** the file (double-click on macOS, right-click → **Extract All…** on Windows).
    You'll get a folder with `manifest.json` inside — keep it somewhere permanent
@@ -88,7 +88,7 @@ The extension is zero-dependency vanilla JS. The only tooling is dev-time
 helpers for validating and packaging it (installed with `npm install`).
 
 - `npm run validate` — check the manifest is valid MV3 and every referenced script parses.
-- `npm run build` — package the extension into `dist/coding_agents_usage-<version>.zip`.
+- `npm run build` — package the extension into `dist/token_police-<version>.zip`.
 - `npm start` — launch Chrome with the extension loaded for interactive testing (uses `web-ext run -t chromium`).
 
 ### Releasing
@@ -97,7 +97,7 @@ Releases are automatic — just merge to `main`. The Release workflow
 (`.github/workflows/release.yml`) runs on every push to `main` that touches the
 extension (docs-only changes are skipped): it validates, tests, and builds the
 zip with `npm run build`, then publishes it as a GitHub Release with a
-stable-named asset `coding-agents-usage.zip` — which is what the Download button
+stable-named asset `token-police.zip` — which is what the Download button
 at the top of this README points to.
 
 Versioning is automatic too: if `manifest.json`'s current version is already
@@ -115,7 +115,7 @@ that the Download badge above and the in-panel update check both look at.
 ### Landing page
 
 `docs/index.html` is the landing page for people who don't use GitHub:
-<https://token-tracking.philosophie.ai/>. It is a template that
+<https://token-police.philosophie.ai/>. It is a template that
 `scripts/build-pages.mjs` renders once per language (`npm run build:pages`
 → `dist/site`):
 
@@ -136,7 +136,7 @@ The Landing page workflow (`.github/workflows/pages.yml`) renders and publishes
 the site on every push to `main` that touches `docs/` or the build script, and
 again after every successful Release so the version baked into the page is
 current. The page's Download button uses the same
-`releases/latest/download/coding-agents-usage.zip` link as the README, and it
+`releases/latest/download/token-police.zip` link as the README, and it
 fetches the latest version number from GitHub's API when it loads, so it never
 needs a manual update. One-time setup: **Settings → Pages → Source: GitHub Actions**.
 

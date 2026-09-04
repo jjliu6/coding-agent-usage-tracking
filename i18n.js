@@ -7,7 +7,7 @@ function currentLang() {
 
 const I18N = {
   en: {
-    brand: 'CODING AGENTS',
+    brand: 'TOKEN POLICE',
     legend: 'number = remaining',
     refresh: 'Refresh',
     fetching: 'Fetching…',
@@ -58,8 +58,8 @@ const I18N = {
     spark7d: 'Remaining % — past 7 days',
     showHair: 'Hair mascot',
     hairLabel: 'HAIR LEFT',
-    showHairTip: 'A little person who floats on the dashboard. Hair thins as quota burns. Finish a stretch and it grows back; it also returns at reset. Drag it, or let it wander.',
-    hairTip: 'Hair left: {n}% — tokens burn it off, finishing a move grows it back.',
+    showHairTip: 'A little person who floats on the dashboard. Hair falls while you sit — 2 hours normally, 1 hour if a tracked agent is burning hard. Remaining quota is a ceiling. Finish a stretch and it grows back; it also returns at reset. Drag it, or let it wander.',
+    hairTip: 'Hair left: {n}% — falls over the sit clock (1h when you burn hard, 2h otherwise). Finish a move to grow it back.',
     actHint: 'Pick one — finish it to grow the hair back.',
     actDoing: 'Doing: {act}',
     actDoingNote: 'Go do it. Come back and tap Done: hair grows back and the numbers return.',
@@ -84,7 +84,7 @@ const I18N = {
     api: 'API',
   },
   zh: {
-    brand: 'CODING AGENTS 额度',
+    brand: 'TOKEN POLICE',
     legend: '数字为剩余额度',
     refresh: '刷新',
     fetching: '刷新中…',
@@ -135,8 +135,8 @@ const I18N = {
     spark7d: '近 7 天剩余额度走势',
     showHair: '发量小人',
     hairLabel: '发量',
-    showHairTip: '会在面板上漂着的小人。额度烧得越多头发越少；做完运动会长回来，额度重置时也会长回来。可以拖，也会自己晃。',
-    hairTip: '发量 {n}% — token 一烧头发就掉，做完一件又长回来。',
+    showHairTip: '会在面板上漂着的小人。坐着头发就会掉：平时 2 小时掉完，某个产品烧得猛则 1 小时掉完；额度剩余是上限。做完运动会长回来，额度重置时也会长回来。可以拖，也会自己晃。',
+    hairTip: '发量 {n}% — 坐着就会掉（烧得猛 1 小时掉完，平时 2 小时）。做完运动会长回来。',
     actHint: '挑一件去做，做完头发就长回来。',
     actDoing: '正在做：{act}',
     actDoingNote: '去做吧。回来点「完成」，头发就长回来，数字也重新显示。',

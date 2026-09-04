@@ -19,6 +19,11 @@ try {
 
   // Assets copied, build inputs left out.
   assert.ok(existsSync(join(out, 'icon-128.png')), 'assets are copied to the site root');
+  assert.ok(existsSync(join(out, 'og-image.png')), 'social card image is copied to the site root');
+  const og = readFileSync(join(out, 'og-image.png'));
+  assert.equal(og.readUInt32BE(16), 1200, 'og-image.png is 1200px wide (X/Facebook minimum for a large card)');
+  assert.equal(og.readUInt32BE(20), 630, 'og-image.png is 630px tall');
+  assert.ok(og.length < 5 * 1024 * 1024, 'og-image.png is under X\'s 5 MB cap');
   assert.ok(!existsSync(join(out, 'i18n')), 'translation source is not deployed');
 
   for (const [name, html] of [['/', root], ['/en/', en], ['/zh/', zh]]) {
@@ -28,16 +33,22 @@ try {
     assert.ok(!/\sdata-i18n/.test(html), `${name}: data-i18n attributes stripped`);
     assert.ok(!/<html[^>]*>[\s\S]*?\bsrc="[^/h]/.test(html), `${name}: no relative src= paths`);
     assert.ok(!/href="[a-z0-9-]+\.(png|json|webm)"/.test(html), `${name}: no relative href= paths`);
-    assert.ok(html.includes('hreflang="en" href="https://token-tracking.philosophie.ai/en/"'), `${name}: hreflang en`);
-    assert.ok(html.includes('hreflang="zh-CN" href="https://token-tracking.philosophie.ai/zh/"'), `${name}: hreflang zh`);
+    assert.ok(html.includes('hreflang="en" href="https://token-police.philosophie.ai/en/"'), `${name}: hreflang en`);
+    assert.ok(html.includes('hreflang="zh-CN" href="https://token-police.philosophie.ai/zh/"'), `${name}: hreflang zh`);
     assert.ok(html.includes('hreflang="x-default"'), `${name}: hreflang x-default`);
     assert.ok(html.includes("fetch('/version.json'"), `${name}: version.json fetched from site root`);
+    assert.ok(html.includes('property="og:image" content="https://token-police.philosophie.ai/og-image.png"'), `${name}: og:image is the 1200x630 card, not the 128px icon`);
+    assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), `${name}: twitter:card so X renders a large preview`);
+    assert.ok(html.includes('name="twitter:image" content="https://token-police.philosophie.ai/og-image.png"'), `${name}: twitter:image matches og:image`);
+    assert.ok(!html.includes('Coding Agents Usage'), `${name}: old brand name is gone`);
+    assert.ok(!html.includes('coding-agent-usage-tracking'), `${name}: old GitHub repo path is gone`);
+    assert.ok(html.includes('github.com/jjliu6/token-police'), `${name}: GitHub links use the renamed repo`);
   }
 
   // English pages.
   assert.ok(en.includes('<html lang="en">'));
-  assert.ok(en.includes('<link rel="canonical" href="https://token-tracking.philosophie.ai/en/">'));
-  assert.ok(en.includes('<title>Coding Agents Usage —'));
+  assert.ok(en.includes('<link rel="canonical" href="https://token-police.philosophie.ai/en/">'));
+  assert.ok(en.includes('<title>Token Police —'));
   assert.ok(en.includes('href="/zh/" hreflang="zh-CN" lang="zh-CN" title="切换到中文">中文</a>'), 'en page links to /zh/');
   assert.ok(en.includes('src="/shot-panel-en.png"') && en.includes('src="/install-demo-en.webm"'), 'en assets');
   assert.ok(!en.includes('location.replace'), '/en/ has no redirect script');
@@ -50,8 +61,8 @@ try {
 
   // Chinese page.
   assert.ok(zh.includes('<html lang="zh-CN">'));
-  assert.ok(zh.includes('<link rel="canonical" href="https://token-tracking.philosophie.ai/zh/">'));
-  assert.ok(zh.includes('<title>Coding Agents 额度'));
+  assert.ok(zh.includes('<link rel="canonical" href="https://token-police.philosophie.ai/zh/">'));
+  assert.ok(zh.includes('<title>Token Police'));
   assert.ok(zh.includes('<meta name="description" content="免费开源的 Chrome 扩展'), 'meta description translated');
   assert.ok(zh.includes('<meta property="og:locale" content="zh_CN">'));
   assert.ok(zh.includes('href="/en/" hreflang="en" lang="en" title="Switch to English">EN</a>'), 'zh page links to /en/');
@@ -61,7 +72,7 @@ try {
   assert.ok(!zh.includes('Ready? It\'s free.'), 'no English body text left on /zh/');
 
   // English body text is untouched on /en/ (spot checks: first and last translatable strings).
-  assert.ok(en.includes('<span>Coding Agents Usage</span>'), 'first English string kept');
+  assert.ok(en.includes('<span>Token Police</span>'), 'first English string kept');
   assert.ok(en.includes("<p>Unofficial. Not affiliated with Anthropic, OpenAI, xAI, Cursor or Google."), 'last English string kept');
 
   console.log('pages-test: OK');
