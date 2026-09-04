@@ -1,15 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Token Police extension icon. Source for icons/16.png, 48.png, 128.png and docs/icon-128.png. -->
+  <!-- Token Police mark: panel mascot at 75% hair (locks 0–17).
+       Crown has started to go; sides and bangs stay. Police is only
+       the collar — mint piping and the old sparkle as a badge. -->
   <rect width="128" height="128" rx="28" fill="#14161c"/>
-  <!-- Heater shield: police / watching the quota -->
-  <path fill="#2f8f72" d="M24 30c0-10 18-16 40-16s40 6 40 16c0 40-22 64-40 78C46 94 24 70 24 30z"/>
-  <path fill="#5CD6B3" d="M28.5 31c0-8.2 16-13.2 35.5-13.2S99.5 22.8 99.5 31c0 37-20 59-35.5 72.2C48.5 90 28.5 68 28.5 31z"/>
-  <!-- Token / coin -->
-  <circle cx="64" cy="48" r="25" fill="#eef1f6"/>
-  <circle cx="64" cy="48" r="21.5" fill="none" stroke="#c5cdd8" stroke-width="2"/>
-  <!-- Quota remaining ~75% -->
-  <circle cx="64" cy="48" r="14.5" fill="none" stroke="#d5dae2" stroke-width="5.5"/>
-  <path d="M64 33.5 A14.5 14.5 0 1 1 49.5 48" fill="none" stroke="#1f9d7c" stroke-width="5.5" stroke-linecap="round"/>
-  <!-- Four-point sparkle kept from the previous mark -->
-  <path fill="#14161c" d="M64 37.6l3.2 7.15 7.15 3.25-7.15 3.25-3.2 7.15-3.2-7.15-7.15-3.25 7.15-3.25z"/>
+  <g transform="translate(64 8) scale(1.38) translate(-40 -15)">
+    <path d="M26 76 C26 70 31 68 40 72 C49 68 54 70 54 76 L52 96 H28 Z" fill="#3a4c68" stroke="#2a3548" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M34 78 C36 83 44 83 46 78" fill="none" stroke="#2a3548" stroke-width="1.4" stroke-linecap="round"/>
+    <!-- police collar -->
+    <path d="M28.5 77.5 C31 72.5 34.5 70.5 40 74 C45.5 70.5 49 72.5 51.5 77.5" fill="none" stroke="#5CD6B3" stroke-width="2.3" stroke-linecap="round"/>
+    <circle cx="40" cy="86" r="5.2" fill="#14161c"/>
+    <circle cx="40" cy="86" r="4.15" fill="#5CD6B3"/>
+    <path fill="#14161c" d="M40 82.4l1.5 3.3 3.3 1.5-3.3 1.5-1.5 3.3-1.5-3.3-3.3-1.5 3.3-1.5z"/>
+    <path d="M35 71 h10 v9 H35 Z" fill="#f3c29a"/>
+    <ellipse cx="20" cy="52" rx="5.2" ry="7.2" fill="#f3c29a" stroke="#c47a4a" stroke-width="1.8"/>
+    <ellipse cx="60" cy="52" rx="5.2" ry="7.2" fill="#f3c29a" stroke="#c47a4a" stroke-width="1.8"/>
+    <ellipse cx="40" cy="52" rx="22" ry="23" fill="#f3c29a" stroke="#c47a4a" stroke-width="2.15"/>
+    <ellipse cx="40" cy="40" rx="9" ry="4.2" fill="#fff" opacity=".22"/>
+    <g fill="#c9842c" stroke="#7a4a14" stroke-width="1.05" stroke-linejoin="round">
+      <!-- 75%: locks 0–17. Crown 18–23 already off. -->
+      <path d="M30.0 30.0 Q32.9 20.4 26.0 18.0 Q23.1 23.6 30.0 30.0 Z"/>
+      <path d="M35.0 28.0 Q39.3 19.1 33.0 16.0 Q28.7 20.9 35.0 28.0 Z"/>
+      <path d="M22.0 44.0 Q14.5 46.5 17.0 56.0 Q21.5 49.5 22.0 44.0 Z"/>
+      <path d="M20.0 40.0 Q11.7 40.0 14.0 50.0 Q18.3 44.0 20.0 40.0 Z"/>
+      <path d="M21.0 35.0 Q13.7 30.7 14.0 40.0 Q18.3 37.3 21.0 35.0 Z"/>
+      <path d="M25.0 32.0 Q19.0 26.1 17.0 34.0 Q21.0 33.9 25.0 32.0 Z"/>
+      <path d="M58.0 44.0 Q58.5 49.5 63.0 56.0 Q65.5 46.5 58.0 44.0 Z"/>
+      <path d="M60.0 40.0 Q61.7 44.0 66.0 50.0 Q68.3 40.0 60.0 40.0 Z"/>
+      <path d="M59.0 35.0 Q61.7 37.3 66.0 40.0 Q66.3 30.7 59.0 35.0 Z"/>
+      <path d="M55.0 32.0 Q59.0 33.9 63.0 34.0 Q61.0 26.1 55.0 32.0 Z"/>
+      <path d="M29.0 41.0 Q23.0 48.4 27.0 55.0 Q31.0 49.6 29.0 41.0 Z"/>
+      <path d="M33.0 39.0 Q27.8 48.5 31.0 56.0 Q36.2 49.5 33.0 39.0 Z"/>
+      <path d="M37.0 38.0 Q32.6 48.8 36.0 57.0 Q41.4 49.2 37.0 38.0 Z"/>
+      <path d="M43.0 38.0 Q38.6 49.2 44.0 57.0 Q47.4 48.8 43.0 38.0 Z"/>
+      <path d="M47.0 39.0 Q43.8 49.5 49.0 56.0 Q52.2 48.5 47.0 39.0 Z"/>
+      <path d="M51.0 41.0 Q49.0 49.6 53.0 55.0 Q57.0 48.4 51.0 41.0 Z"/>
+      <path d="M35.0 40.0 Q30.4 47.5 33.0 54.0 Q37.6 48.5 35.0 40.0 Z"/>
+      <path d="M45.0 40.0 Q42.4 48.5 47.0 54.0 Q49.6 47.5 45.0 40.0 Z"/>
+    </g>
+    <path d="M27 48 Q31 46.4 35 48.2" fill="none" stroke="#3a2a20" stroke-width="1.55" stroke-linecap="round"/>
+    <path d="M53 48 Q49 46.4 45 48.2" fill="none" stroke="#3a2a20" stroke-width="1.55" stroke-linecap="round"/>
+    <ellipse cx="31" cy="53.2" rx="4.1" ry="4.8" fill="#fff"/>
+    <ellipse cx="49" cy="53.2" rx="4.1" ry="4.8" fill="#fff"/>
+    <ellipse cx="31.4" cy="53.6" rx="2.3" ry="2.7" fill="#3a2416"/>
+    <ellipse cx="49.4" cy="53.6" rx="2.3" ry="2.7" fill="#3a2416"/>
+    <circle cx="30.4" cy="52.2" r="1" fill="#fff"/>
+    <circle cx="48.4" cy="52.2" r="1" fill="#fff"/>
+    <ellipse cx="24.5" cy="58.5" rx="4.2" ry="2.1" fill="#f0a090" opacity=".45"/>
+    <ellipse cx="55.5" cy="58.5" rx="4.2" ry="2.1" fill="#f0a090" opacity=".45"/>
+    <path d="M39.2 57.6 Q40 59.2 40.8 57.6" fill="none" stroke="#d4a07a" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M33 62 Q40 67.5 47 62" fill="none" stroke="#3a2a20" stroke-width="2.1" stroke-linecap="round"/>
+  </g>
 </svg>

@@ -1,7 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <!-- 16px toolbar variant: wide shield + token disc, no hairline details. -->
+  <!-- 16px: 75% hair — thinning crown, sides + bangs, collar badge. -->
   <rect width="16" height="16" rx="3.5" fill="#14161c"/>
-  <path fill="#5CD6B3" d="M2.7 3.7c0-1.15 2.1-1.9 5.3-1.9s5.3.75 5.3 1.9c0 4.55-2.7 7.15-5.3 8.55C5.4 10.85 2.7 8.25 2.7 3.7z"/>
-  <circle cx="8" cy="5.85" r="3.05" fill="#eef1f6"/>
-  <circle cx="8" cy="5.85" r="1.05" fill="#1f9d7c"/>
+  <path fill="#3a4c68" d="M3.6 12.8C3.6 11.2 5.4 10.5 8 10.9 10.6 10.5 12.4 11.2 12.4 12.8V16H3.6z"/>
+  <path d="M5.3 12.15 L8 11.2 L10.7 12.15" fill="none" stroke="#5CD6B3" stroke-width=".85" stroke-linecap="round"/>
+  <circle cx="8" cy="13.85" r="1.05" fill="#5CD6B3"/>
+  <!-- remaining crown tufts (left / front-left) -->
+  <ellipse cx="5.7" cy="2.65" rx="1.15" ry="1.35" fill="#c9842c"/>
+  <ellipse cx="7.2" cy="2.35" rx="1.05" ry="1.25" fill="#c9842c"/>
+  <!-- side hair -->
+  <ellipse cx="3.15" cy="8.15" rx="1.5" ry="2.15" fill="#c9842c"/>
+  <ellipse cx="12.85" cy="8.15" rx="1.5" ry="2.15" fill="#c9842c"/>
+  <circle cx="8" cy="7.85" r="4.05" fill="#f3c29a"/>
+  <!-- bangs -->
+  <ellipse cx="5.7" cy="6.35" rx=".85" ry="1.35" fill="#c9842c"/>
+  <ellipse cx="8" cy="6.15" rx=".8" ry="1.25" fill="#c9842c"/>
+  <ellipse cx="10.3" cy="6.35" rx=".85" ry="1.35" fill="#c9842c"/>
+  <circle cx="6.45" cy="7.95" r=".85" fill="#fff"/>
+  <circle cx="9.55" cy="7.95" r=".85" fill="#fff"/>
+  <path d="M6.5 9.85 Q8 10.8 9.5 9.85" fill="none" stroke="#3a2a20" stroke-width=".7" stroke-linecap="round"/>
 </svg>

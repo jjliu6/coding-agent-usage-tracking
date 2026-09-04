@@ -79,7 +79,7 @@ replace the folder's contents, then click the ↻ reload button on the extension
 - `content.js` — content script that reads usage numbers from each product page
 - `popup.html` / `popup.js` / `i18n.js` / `activities.js` — the side-panel dashboard (English / 中文) and the rest/move activity pool
 - `_locales/` — Chrome Store / `chrome://extensions` name and description
-- `icons/` — extension icons
+- `icons/` — extension icons (`token-police.svg` is the source; `python3 scripts/render-icons.py` writes the PNGs)
 - `docs/` — the landing page (`index.html`) published to GitHub Pages, plus README screenshots
 
 ## Development
@@ -90,6 +90,7 @@ helpers for validating and packaging it (installed with `npm install`).
 - `npm run validate` — check the manifest is valid MV3 and every referenced script parses.
 - `npm run build` — package the extension into `dist/token_police-<version>.zip`.
 - `npm start` — launch Chrome with the extension loaded for interactive testing (uses `web-ext run -t chromium`).
+- After editing `icons/token-police.svg`, run `python3 scripts/render-icons.py`. If the mark changed, also run `python3 scripts/build-og-image.py` (both need Pillow; the icon script also needs cairosvg).
 
 ### Releasing
 
