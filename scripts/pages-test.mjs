@@ -19,6 +19,11 @@ try {
 
   // Assets copied, build inputs left out.
   assert.ok(existsSync(join(out, 'icon-128.png')), 'assets are copied to the site root');
+  assert.ok(existsSync(join(out, 'og-image.png')), 'social card image is copied to the site root');
+  const og = readFileSync(join(out, 'og-image.png'));
+  assert.equal(og.readUInt32BE(16), 1200, 'og-image.png is 1200px wide (X/Facebook minimum for a large card)');
+  assert.equal(og.readUInt32BE(20), 630, 'og-image.png is 630px tall');
+  assert.ok(og.length < 5 * 1024 * 1024, 'og-image.png is under X\'s 5 MB cap');
   assert.ok(!existsSync(join(out, 'i18n')), 'translation source is not deployed');
 
   for (const [name, html] of [['/', root], ['/en/', en], ['/zh/', zh]]) {
@@ -32,6 +37,9 @@ try {
     assert.ok(html.includes('hreflang="zh-CN" href="https://token-tracking.philosophie.ai/zh/"'), `${name}: hreflang zh`);
     assert.ok(html.includes('hreflang="x-default"'), `${name}: hreflang x-default`);
     assert.ok(html.includes("fetch('/version.json'"), `${name}: version.json fetched from site root`);
+    assert.ok(html.includes('property="og:image" content="https://token-tracking.philosophie.ai/og-image.png"'), `${name}: og:image is the 1200x630 card, not the 128px icon`);
+    assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), `${name}: twitter:card so X renders a large preview`);
+    assert.ok(html.includes('name="twitter:image" content="https://token-tracking.philosophie.ai/og-image.png"'), `${name}: twitter:image matches og:image`);
   }
 
   // English pages.
