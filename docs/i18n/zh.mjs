@@ -10,11 +10,11 @@
 // drift apart silently.
 
 export default {
-  'meta.title': 'Token Police 额度 — 一眼看清 Claude Code、Codex、Cursor、Grok、Gemini 还剩多少额度',
+  'meta.title': 'Token Police — 一眼看清 Claude Code、Codex、Cursor、Grok、Gemini 还剩多少额度',
   'meta.description': '免费开源的 Chrome 扩展，显示 Claude Code、Codex、Grok、Cursor、Grok Bot 和 Gemini 还剩多少额度——包括重置时间、消耗速度和低额度提醒。不用账号，数据不出你的浏览器。',
-  'meta.ogTitle': 'Token Police 额度 — 你的 AI 编程额度，一眼看清',
+  'meta.ogTitle': 'Token Police — 你的 AI 编程额度，一眼看清',
   'meta.ogDescription': '免费 Chrome 扩展：Claude Code、Codex、Cursor、Grok 和 Gemini 的剩余额度，集中在一个侧边栏。下载最新版本。',
-  'brand': 'Token Police 额度',
+  'brand': 'Token Police',
   'nav.features': '功能', 'nav.install': '安装', 'nav.faq': '常见问题',
   'hero.eyebrow': '免费 · 开源 · Chrome 扩展',
   'hero.h1': '一眼看清你的 AI 编程额度<span class="hl">还剩多少</span>。',

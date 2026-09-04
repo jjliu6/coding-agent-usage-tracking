@@ -84,7 +84,7 @@ const I18N = {
     api: 'API',
   },
   zh: {
-    brand: 'TOKEN POLICE 额度',
+    brand: 'TOKEN POLICE',
     legend: '数字为剩余额度',
     refresh: '刷新',
     fetching: '刷新中…',
