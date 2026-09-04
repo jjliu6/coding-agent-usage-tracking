@@ -41,6 +41,8 @@ try {
     assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), `${name}: twitter:card so X renders a large preview`);
     assert.ok(html.includes('name="twitter:image" content="https://token-tracking.philosophie.ai/og-image.png"'), `${name}: twitter:image matches og:image`);
     assert.ok(!html.includes('Coding Agents Usage'), `${name}: old brand name is gone`);
+    assert.ok(!html.includes('coding-agent-usage-tracking'), `${name}: old GitHub repo path is gone`);
+    assert.ok(html.includes('github.com/jjliu6/token-police'), `${name}: GitHub links use the renamed repo`);
   }
 
   // English pages.

@@ -3,7 +3,7 @@
 //
 // 版本号的唯一来源是 manifest.json 里的 "version"（Chrome 装扩展时读的就是它），
 // 代码里不要再手写一份，否则发布时改漏一处就对不上了。
-const UPDATE_REPO = 'jjliu6/coding-agent-usage-tracking';
+const UPDATE_REPO = 'jjliu6/token-police';
 // GitHub 的公开 API：返回这个仓库"最新一次 Release"的信息（tag_name 就是版本号，如 "v1.2.1"）。
 // 这个接口带 CORS 头，扩展不需要额外的 host_permissions 就能请求；不登录、不带任何用户数据。
 const UPDATE_API = 'https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest';
