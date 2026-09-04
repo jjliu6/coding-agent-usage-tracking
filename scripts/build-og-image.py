@@ -117,7 +117,7 @@ def main():
     draw.rectangle((0, H - 48, W, H), fill=BANNER)
     draw.text(
         (72, H - 34),
-        "token-tracking.philosophie.ai   ·   Free  ·  Open source  ·  No account",
+        "token-police.philosophie.ai   ·   Free  ·  Open source  ·  No account",
         font=foot,
         fill=MUTED,
     )

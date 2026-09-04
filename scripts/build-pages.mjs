@@ -2,7 +2,7 @@
 //
 //   node scripts/build-pages.mjs [outDir]      (default: dist/site)
 //
-// Output layout (what GitHub Pages serves at token-tracking.philosophie.ai):
+// Output layout (what GitHub Pages serves at token-police.philosophie.ai):
 //
 //   /            English, plus a tiny inline script that sends readers whose
 //                stored choice / browser language is Chinese to /zh/, and
@@ -32,7 +32,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const docs = join(root, 'docs');
-const SITE = 'https://token-tracking.philosophie.ai';
+const SITE = 'https://token-police.philosophie.ai';
 
 export const LANGS = {
   en: { htmlLang: 'en', ogLocale: 'en_US', path: '/en/', label: 'EN', switchTitle: 'Switch to English' },
