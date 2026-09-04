@@ -424,10 +424,21 @@ function sitIntervalMs(hist, ids, now) {
 
 function sitDue(lastMovedAt, pick, now, interval) {
   now = now == null ? Date.now() : now;
-  interval = interval == null ? SIT_INTERVAL_MS : interval;
+  // 跟 sitHairPct 一样：0 / 负数当没传，避免时钟已到期但头发还停在 99%。
+  interval = interval == null || interval <= 0 ? SIT_INTERVAL_MS : interval;
   if (pick) return true;
   if (!lastMovedAt) return false;
   return now - lastMovedAt >= interval;
+}
+
+// 遮罩和「做完头发长回来」只在显示发量真的掉光时出现。
+// 额度还剩 99% 就催复原是错的：活动档位必须看头发，不能看额度。
+var RESTORE_HAIR_MAX = 0;
+
+function restoreDue(hairPct, clockDue, pick) {
+  if (pick) return true;
+  if (!clockDue || hairPct == null) return false;
+  return hairPct <= RESTORE_HAIR_MAX;
 }
 
 // 掉发引擎：显示发量 = min(额度发量, 久坐时钟)
@@ -439,7 +450,8 @@ function sitDue(lastMovedAt, pick, now, interval) {
 // 久坐时钟：从 lastMovedAt 起在当前 sit interval 内从 100 线性掉到 0。
 //   平时 2 小时掉完 → 每缕 ≈ 5 分钟（24 缕 / 7200s）
 //   近 2 小时某个产品烧掉 >10% 则 1 小时掉完 → 每缕 ≈ 2.5 分钟
-// 催你动的那一刻头发一定是 0；烧得猛时不会出现「提醒到了头发还在」。
+// 催你动的那一刻显示发量一定是 0（restoreDue 再卡一道：头发还在就不催复原）。
+// 活动池按显示发量分档，所以催的时候一定是 low（离开座位），不会在 99% 时甩「坐着绷小腿」。
 // 额度仍是上限：刚打开、还没做过运动时，发量不会高于当前平均剩余。
 function restoreHairBoost(avg) {
   if (avg == null) return 0;
@@ -869,10 +881,11 @@ function render() {
       clearTimeout(hairTickTimer);
       hairTickTimer = null;
     }
-    const due = sitDue(lastMoved, pick, Date.now(), interval);
-    const offer = due ? currentOffer(pct, pick, false, res.activityOffer) : null;
+    const clockDue = sitDue(lastMoved, pick, Date.now(), interval);
+    const due = restoreDue(hairPct, clockDue, pick);
+    const offer = due ? currentOffer(hairPct, pick, false, res.activityOffer) : null;
     setVeil(showMascot && due);
-    renderBuddy(showMascot, pct, pick, due, res.buddyPos, offer);
+    renderBuddy(showMascot, hairPct, pick, due, res.buddyPos, offer);
     renderVersion(res.checkUpdates === false ? null : res.updateCheck);
     renderCredits();
     const any = shown.some((id) => map[id]);
