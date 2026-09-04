@@ -735,7 +735,7 @@ function card(id, a, hist, fail) {
     : breakdownBar(a.breakdown);
 
   let burn = '';
-  if (est) burn = `<div style="font-size:10.5px;margin-top:9px;color:${est.color}">🔥 ${est.text}</div>`;
+  if (est) burn = `<div style="font-size:10.5px;margin-top:7px;color:${est.color}">🔥 ${est.text}</div>`;
   const failLine = fail
     ? `<div class="fail">⚠ ${failText(fail)} ${openLink(id)}</div>`
     : '';
