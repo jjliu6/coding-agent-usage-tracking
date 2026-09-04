@@ -1,18 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <!-- 16px: scalp must read between a small perched hat and the eyes. -->
+  <!-- 16px: bald dome + side hair + collar badge. No hat. -->
   <rect width="16" height="16" rx="3.5" fill="#14161c"/>
-  <ellipse cx="3.15" cy="9.55" rx="1.65" ry="2.3" fill="#c9842c"/>
-  <ellipse cx="12.85" cy="9.55" rx="1.65" ry="2.3" fill="#c9842c"/>
-  <circle cx="8" cy="10.05" r="4.2" fill="#f3c29a"/>
-  <!-- forehead / bald spot -->
-  <ellipse cx="8" cy="7.15" rx="2.4" ry="1.35" fill="#f7d4b6"/>
-  <circle cx="6.35" cy="9.6" r=".95" fill="#fff"/>
-  <circle cx="9.65" cy="9.6" r=".95" fill="#fff"/>
-  <path d="M6.35 11.7 Q8 12.8 9.65 11.7" fill="none" stroke="#3a2a20" stroke-width=".8" stroke-linecap="round"/>
-  <!-- tiny perched cap -->
-  <path fill="#45587a" d="M5.35 4.55C5.35 2.85 6.45 1.85 8 1.85s2.65 1 2.65 2.7C10.3 3.15 9.25 2.65 8 2.65S5.7 3.15 5.35 4.55z"/>
-  <path fill="#5CD6B3" d="M5.4 4.05h5.2v.95H5.4z"/>
-  <circle cx="8" cy="3.15" r=".95" fill="#14161c"/>
-  <path fill="#5CD6B3" d="M8 2.45l.32.68.68.32-.68.32L8 4.45l-.32-.68-.68-.32.68-.32z"/>
-  <path fill="#1e2838" d="M4.85 4.85c.95.85 5.35.85 6.3 0-1.1.28-5.2.28-6.3 0z"/>
+  <path fill="#3a4c68" d="M3.4 13.4C3.4 11.6 5.2 10.8 8 11.2 10.8 10.8 12.6 11.6 12.6 13.4V16H3.4z"/>
+  <path d="M5.2 12.6 L8 11.6 L10.8 12.6" fill="none" stroke="#5CD6B3" stroke-width=".85" stroke-linecap="round"/>
+  <circle cx="8" cy="14.05" r="1.05" fill="#5CD6B3"/>
+  <ellipse cx="3.15" cy="9.15" rx="1.55" ry="2.2" fill="#c9842c"/>
+  <ellipse cx="12.85" cy="9.15" rx="1.55" ry="2.2" fill="#c9842c"/>
+  <circle cx="8" cy="8.15" r="4.35" fill="#f3c29a"/>
+  <ellipse cx="8" cy="5.35" rx="2.6" ry="1.7" fill="#f7d8bc"/>
+  <circle cx="6.4" cy="8.2" r=".9" fill="#fff"/>
+  <circle cx="9.6" cy="8.2" r=".9" fill="#fff"/>
+  <path d="M6.45 10.15 Q8 11.15 9.55 10.15" fill="none" stroke="#3a2a20" stroke-width=".75" stroke-linecap="round"/>
 </svg>
