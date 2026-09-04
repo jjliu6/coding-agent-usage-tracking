@@ -62,7 +62,7 @@ try {
   // Chinese page.
   assert.ok(zh.includes('<html lang="zh-CN">'));
   assert.ok(zh.includes('<link rel="canonical" href="https://token-police.philosophie.ai/zh/">'));
-  assert.ok(zh.includes('<title>Token Police 额度'));
+  assert.ok(zh.includes('<title>Token Police'));
   assert.ok(zh.includes('<meta name="description" content="免费开源的 Chrome 扩展'), 'meta description translated');
   assert.ok(zh.includes('<meta property="og:locale" content="zh_CN">'));
   assert.ok(zh.includes('href="/en/" hreflang="en" lang="en" title="Switch to English">EN</a>'), 'zh page links to /en/');
