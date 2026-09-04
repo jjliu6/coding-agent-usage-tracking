@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Token Police mark: panel mascot at 100% hair. Same locks / face /
-       shirt cut as hairHead(100). Police is only the collar — mint piping
-       and the old sparkle as a badge. Nothing on the scalp. -->
+  <!-- Token Police mark: panel mascot at 75% hair (locks 0–17).
+       Crown has started to go; sides and bangs stay. Police is only
+       the collar — mint piping and the old sparkle as a badge. -->
   <rect width="128" height="128" rx="28" fill="#14161c"/>
   <g transform="translate(64 8) scale(1.38) translate(-40 -15)">
     <path d="M26 76 C26 70 31 68 40 72 C49 68 54 70 54 76 L52 96 H28 Z" fill="#3a4c68" stroke="#2a3548" stroke-width="1.8" stroke-linejoin="round"/>
@@ -17,15 +17,9 @@
     <ellipse cx="40" cy="52" rx="22" ry="23" fill="#f3c29a" stroke="#c47a4a" stroke-width="2.15"/>
     <ellipse cx="40" cy="40" rx="9" ry="4.2" fill="#fff" opacity=".22"/>
     <g fill="#c9842c" stroke="#7a4a14" stroke-width="1.05" stroke-linejoin="round">
-      <!-- crown 16–23, sides 8–15, bangs 0–7 — same order as the panel -->
+      <!-- 75%: locks 0–17. Crown 18–23 already off. -->
       <path d="M30.0 30.0 Q32.9 20.4 26.0 18.0 Q23.1 23.6 30.0 30.0 Z"/>
       <path d="M35.0 28.0 Q39.3 19.1 33.0 16.0 Q28.7 20.9 35.0 28.0 Z"/>
-      <path d="M40.0 27.0 Q45.6 19.0 40.0 15.0 Q34.4 19.0 40.0 27.0 Z"/>
-      <path d="M45.0 28.0 Q51.3 20.9 47.0 16.0 Q40.7 19.1 45.0 28.0 Z"/>
-      <path d="M50.0 30.0 Q56.9 23.6 54.0 18.0 Q47.1 20.4 50.0 30.0 Z"/>
-      <path d="M37.0 29.0 Q40.5 20.2 35.0 17.0 Q31.5 21.8 37.0 29.0 Z"/>
-      <path d="M43.0 29.0 Q48.5 21.8 45.0 17.0 Q39.5 20.2 43.0 29.0 Z"/>
-      <path d="M40.0 31.0 Q45.0 24.0 40.0 19.0 Q35.0 24.0 40.0 31.0 Z"/>
       <path d="M22.0 44.0 Q14.5 46.5 17.0 56.0 Q21.5 49.5 22.0 44.0 Z"/>
       <path d="M20.0 40.0 Q11.7 40.0 14.0 50.0 Q18.3 44.0 20.0 40.0 Z"/>
       <path d="M21.0 35.0 Q13.7 30.7 14.0 40.0 Q18.3 37.3 21.0 35.0 Z"/>
