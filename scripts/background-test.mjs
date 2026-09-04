@@ -17,7 +17,7 @@ let onMessage = null;
 const removedTabs = [];
 const createdTabs = [];
 const badge = { texts: [], colors: [] };
-const alarms = { created: [], cleared: 0, listener: null };
+const alarms = { created: [], cleared: 0, listener: null, live: {} };
 const notifications = [];
 const fetches = [];
 // 假的 GitHub API：默认回 v9.9.9（比任何已装版本都新）；可以改成失败
@@ -89,8 +89,11 @@ const ctxObj = {
       setBadgeBackgroundColor: ({ color }) => badge.colors.push(color),
     },
     alarms: {
-      create: (name, info) => alarms.created.push({ name, ...info }),
-      clear: (_name, cb) => { alarms.cleared++; if (cb) cb(); },
+      // create 覆盖同名闹钟（真实 Chrome 会取消旧的重建）；live 记录当前存在哪些闹钟，
+      // 好让 get 像真实 API 那样异步回调告知某个闹钟是否已存在。
+      create: (name, info) => { alarms.created.push({ name, ...info }); alarms.live[name] = { name, ...info }; },
+      clear: (name, cb) => { alarms.cleared++; delete alarms.live[name]; if (cb) cb(); },
+      get: (name, cb) => { setTimeout(() => cb(alarms.live[name] || null), 0); },
       onAlarm: { addListener: (fn) => { alarms.listener = fn; } },
     },
     notifications: {
@@ -299,6 +302,23 @@ await tick(10);
 if (fetches.length !== fetchesBefore + 1) problems.push('checkUpdates=true should check right away');
 if (!store.updateCheck || store.updateCheck.latest !== '9.9.9') problems.push('re-enabling should store a fresh result');
 
+// 关键回归：闹钟已存在时不该被重复创建。service worker 反复重启会重跑 syncUpdateAlarm/
+// syncAlarm；若每次都 create，会把周期倒计时清零，闹钟永远走不到点、从不触发（正是
+// "装着旧版却一直显示 up to date" 的根因）。此刻两个闹钟都已存在，再触发一次 sync
+// （模拟重启 / 重复写设置）不应新增 create。
+const upCreatedBefore = alarms.created.filter((a) => a.name === 'updateCheck').length;
+await new Promise((r) => ctxObj.chrome.storage.local.set({ checkUpdates: true }, r));
+await tick(10);
+if (alarms.created.filter((a) => a.name === 'updateCheck').length !== upCreatedBefore) {
+  problems.push('re-syncing must not recreate an existing updateCheck alarm (that would reset its daily countdown so it never fires)');
+}
+const qrCreatedBefore = alarms.created.filter((a) => a.name === 'quietRefresh').length;
+await new Promise((r) => ctxObj.chrome.storage.local.set({ autoRefresh: true }, r));
+await tick(10);
+if (alarms.created.filter((a) => a.name === 'quietRefresh').length !== qrCreatedBefore) {
+  problems.push('re-syncing must not recreate an existing quietRefresh alarm (that would reset its hourly countdown so it never fires)');
+}
+
 // 11) 动一动提醒：默认开；2 小时内烧掉 >10% 才提醒；2 小时冷却；关掉开关就不提醒；只算重置之后的消耗
 const H = 3600000;
 const T = now + 30 * 86400000; // 远离前面的历史，互不干扰
@@ -344,4 +364,5 @@ console.log('ok  Hourly quiet check: background tabs only, tracked agents only, 
 console.log('ok  Move reminder: on by default, >10% burned in 2h, 2h cooldown, off when unticked, counts from the last reset');
 console.log('ok  Cursor + Grok Bot share one spending-page scrape; missing Grok Bot section is flagged, not failed');
 console.log('ok  Daily update check stores the latest release, survives failures, and is toggleable');
+console.log('ok  Alarms are not recreated on re-sync, so their countdowns are never reset');
 console.log('\nBackground test passed.');
