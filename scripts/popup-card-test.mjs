@@ -821,8 +821,8 @@ console.log('ok  Side panel footer can scroll and wrap instead of clipping');
 if (!/transition:\s*left 7\.2s/.test(htmlCss) || !/top 7\.2s/.test(htmlCss)) {
   wanderProblems.push('buddy CSS glide should be 7.2s so it matches WANDER_GLIDE_MS');
 }
-if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
-  wanderProblems.push('dragging should disable the glide transition');
+if (!/\.buddy\.dragging\{[^}]*transition:\s*none\s*!important/.test(htmlCss)) {
+  wanderProblems.push('dragging should disable the glide transition with !important so it beats the inline 7.2s style');
 }
 if (!/background:rgba\(20,22,28,\.2[0-8]\)/.test(htmlCss) || !/backdrop-filter:blur\(/.test(htmlCss)) {
   wanderProblems.push('buddy card should be a frosted glass so quota text shows through');
@@ -835,6 +835,87 @@ if (wanderProblems.length) {
   process.exit(1);
 }
 console.log('ok  Buddy wander takes long glides and stays inside the panel');
+
+// --- Drag must ignore the 7.2s wander glide (inline transition beats .dragging CSS) ---
+const dragProblems = [];
+delete els.buddy.dataset.ready;
+const dragListeners = {};
+els.buddy.addEventListener = (type, fn) => {
+  (dragListeners[type] = dragListeners[type] || []).push(fn);
+};
+const dragClasses = new Set();
+els.buddy.classList = {
+  add: (c) => dragClasses.add(c),
+  remove: (c) => dragClasses.delete(c),
+  contains: (c) => dragClasses.has(c),
+  toggle: noop,
+};
+let visual = { left: 80, top: 120 };
+els.buddy.getBoundingClientRect = () => ({
+  left: visual.left,
+  top: visual.top,
+  width: 176,
+  height: 200,
+  right: visual.left + 176,
+  bottom: visual.top + 200,
+});
+els.buddy.offsetWidth = 176;
+els.buddy.offsetHeight = 200;
+els.buddy.hidden = false;
+ctx.initBuddy();
+if (typeof ctx.buddyGlide !== 'function') dragProblems.push('buddyGlide should be a helper for the wander CSS');
+if (!els.buddy.style.transition || !els.buddy.style.transition.includes(`${ctx.WANDER_GLIDE_MS}ms`)) {
+  dragProblems.push(`init should set the ${ctx.WANDER_GLIDE_MS}ms inline glide, got ${JSON.stringify(els.buddy.style.transition)}`);
+}
+// Mid-glide: CSS left/top already sit at the wander target, but the plate is still on the way.
+els.buddy.style.left = '300px';
+els.buddy.style.top = '400px';
+const fire = (type, event) => {
+  (dragListeners[type] || []).forEach((fn) => fn(event));
+};
+fire('pointerdown', { target: els.buddy, clientX: 90, clientY: 130, pointerId: 1, button: 0, preventDefault: noop });
+if (els.buddy.style.transition !== 'none') {
+  dragProblems.push(`pointerdown must clear the inline glide, got ${JSON.stringify(els.buddy.style.transition)}`);
+}
+if (els.buddy.style.left !== '80px' || els.buddy.style.top !== '120px') {
+  dragProblems.push(`pointerdown should snap to the on-screen plate, got ${els.buddy.style.left},${els.buddy.style.top}`);
+}
+if (!dragClasses.has('dragging')) dragProblems.push('pointerdown should add the dragging class');
+const beforeWander = { left: els.buddy.style.left, top: els.buddy.style.top };
+ctx.wanderBuddy();
+if (els.buddy.style.left !== beforeWander.left || els.buddy.style.top !== beforeWander.top) {
+  dragProblems.push('wander must not move the buddy while dragging');
+}
+visual = { left: parseFloat(els.buddy.style.left), top: parseFloat(els.buddy.style.top) };
+fire('pointermove', { clientX: 150, clientY: 200, pointerId: 1 });
+visual = { left: parseFloat(els.buddy.style.left), top: parseFloat(els.buddy.style.top) };
+if (els.buddy.style.left !== '140px' || els.buddy.style.top !== '190px') {
+  dragProblems.push(`pointermove should follow the cursor immediately, got ${els.buddy.style.left},${els.buddy.style.top}`);
+}
+if (els.buddy.style.transition !== 'none') {
+  dragProblems.push('glide must stay off for the whole drag');
+}
+fire('pointerup', { pointerId: 1 });
+if (dragClasses.has('dragging')) dragProblems.push('pointerup should drop the dragging class');
+if (!els.buddy.style.transition || !els.buddy.style.transition.includes(`${ctx.WANDER_GLIDE_MS}ms`)) {
+  dragProblems.push(`pointerup should restore the glide, got ${JSON.stringify(els.buddy.style.transition)}`);
+}
+if (!store.buddyPos || store.buddyPos.x !== 140 || store.buddyPos.y !== 190) {
+  dragProblems.push(`drop should persist the new spot, got ${JSON.stringify(store.buddyPos)}`);
+}
+const glideAfter = els.buddy.style.transition;
+fire('pointerdown', {
+  target: { tagName: 'BUTTON', dataset: { act: 'walk' }, parentNode: els.buddy },
+  clientX: 150, clientY: 200, pointerId: 2, button: 0, preventDefault: noop,
+});
+if (els.buddy.style.transition !== glideAfter) {
+  dragProblems.push('clicking an activity button should not start a drag');
+}
+if (dragProblems.length) {
+  console.error(dragProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Dragging the mascot follows the cursor instead of the 7.2s wander glide');
 
 // --- Occasional mouth blurts, stage + language aware ---
 const sayProblems = [];

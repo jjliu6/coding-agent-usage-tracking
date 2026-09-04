@@ -602,27 +602,51 @@ function wanderBuddy() {
   placeBuddy(next.x, next.y);
 }
 
+function buddyGlide() {
+  return `left ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1), top ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1)`;
+}
+
 function initBuddy(pos) {
   const buddy = document.getElementById('buddy');
   if (!buddy || (buddy.dataset && buddy.dataset.ready)) return;
   if (buddy.dataset) buddy.dataset.ready = '1';
-  if (buddy.style) {
-    buddy.style.transition = `left ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1), top ${WANDER_GLIDE_MS}ms cubic-bezier(.4,.08,.2,1)`;
-  }
+  if (buddy.style) buddy.style.transition = buddyGlide();
   if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') placeBuddy(pos.x, pos.y);
   if (buddy.addEventListener) {
     let dragging = false, ox = 0, oy = 0;
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (buddy.classList && buddy.classList.remove) buddy.classList.remove('dragging');
+      if (buddy.style) buddy.style.transition = buddyGlide();
+      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : null;
+      if (r) {
+        const w = typeof window !== 'undefined' ? window : {};
+        w.__buddyTarget = { x: r.left, y: r.top };
+        chrome.storage.local.set({ buddyPos: { x: r.left, y: r.top } });
+      }
+    };
     buddy.addEventListener('pointerdown', (e) => {
+      if (e.button != null && e.button !== 0) return;
       let n = e.target;
       while (n && n !== buddy) {
         if (n.tagName === 'BUTTON' || (n.dataset && n.dataset.act)) return;
         n = n.parentNode;
       }
+      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : { left: e.clientX, top: e.clientY };
+      // 先钉在当前画面位置，再关掉 7.2s 滑行。只加 .dragging 不够：
+      // initBuddy 写的 inline transition 会盖掉 CSS 的 transition:none，拖起来像没动。
+      if (buddy.style) {
+        buddy.style.left = r.left + 'px';
+        buddy.style.top = r.top + 'px';
+        buddy.style.right = 'auto';
+        buddy.style.transition = 'none';
+      }
       dragging = true;
       if (buddy.classList && buddy.classList.add) buddy.classList.add('dragging');
-      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : { left: e.clientX, top: e.clientY };
       ox = e.clientX - r.left;
       oy = e.clientY - r.top;
+      if (e.preventDefault) e.preventDefault();
       if (buddy.setPointerCapture && e.pointerId != null) {
         try { buddy.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       }
@@ -631,17 +655,8 @@ function initBuddy(pos) {
       if (!dragging) return;
       placeBuddy(e.clientX - ox, e.clientY - oy);
     });
-    buddy.addEventListener('pointerup', (e) => {
-      if (!dragging) return;
-      dragging = false;
-      if (buddy.classList && buddy.classList.remove) buddy.classList.remove('dragging');
-      const r = buddy.getBoundingClientRect ? buddy.getBoundingClientRect() : null;
-      if (r) {
-        const w = typeof window !== 'undefined' ? window : {};
-        w.__buddyTarget = { x: r.left, y: r.top };
-        chrome.storage.local.set({ buddyPos: { x: r.left, y: r.top } });
-      }
-    });
+    buddy.addEventListener('pointerup', endDrag);
+    buddy.addEventListener('pointercancel', endDrag);
   }
   const w = typeof window !== 'undefined' ? window : null;
   if (w && !w.__buddyWander && typeof setInterval === 'function') {
