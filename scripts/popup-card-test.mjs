@@ -723,7 +723,7 @@ if (!/transition:\s*left 7\.2s/.test(htmlCss) || !/top 7\.2s/.test(htmlCss)) {
 if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
   wanderProblems.push('dragging should disable the glide transition');
 }
-if (!/background:rgba\(20,22,28,\.3[0-9]\)/.test(htmlCss) || !/backdrop-filter:blur\(/.test(htmlCss)) {
+if (!/background:rgba\(20,22,28,\.2[0-8]\)/.test(htmlCss) || !/backdrop-filter:blur\(/.test(htmlCss)) {
   wanderProblems.push('buddy card should be a frosted glass so quota text shows through');
 }
 if (wanderProblems.length) {
