@@ -20,7 +20,7 @@ versioned copy (`token_police-<version>.zip`) on the
 several versions around.
 
 **Not a GitHub person?** The same download plus step-by-step install instructions live on the
-[product landing page](https://token-tracking.philosophie.ai/) — send that link to
+[product landing page](https://token-police.philosophie.ai/) — send that link to
 anyone who just wants the extension. It shows the same latest version as the button above.
 
 <sub>Want the newest unreleased code instead? Grab the
@@ -115,7 +115,7 @@ that the Download badge above and the in-panel update check both look at.
 ### Landing page
 
 `docs/index.html` is the landing page for people who don't use GitHub:
-<https://token-tracking.philosophie.ai/>. It is a template that
+<https://token-police.philosophie.ai/>. It is a template that
 `scripts/build-pages.mjs` renders once per language (`npm run build:pages`
 → `dist/site`):
 
