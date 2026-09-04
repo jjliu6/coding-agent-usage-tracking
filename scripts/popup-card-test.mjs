@@ -459,8 +459,11 @@ const nBtns = (els.acts.innerHTML.match(/<button /g) || []).length;
 if (nBtns < 2 || nBtns > 3) {
   buddyProblems.push(`should list 2–3 random activities, got ${nBtns} from ${els.acts.innerHTML}`);
 }
-if (!store.activityOffer || store.activityOffer.stage !== 'high') {
-  buddyProblems.push('due render should persist a high-stage offer');
+if (!store.activityOffer || store.activityOffer.stage !== 'low') {
+  buddyProblems.push('due render should persist a low-stage offer (hair is 0, not quota)');
+}
+if (!(store.activityOffer.ids || []).every((id) => ctx.activityIds('low').includes(id))) {
+  buddyProblems.push('due activities should come from the low pool, not seated high-stage stretches');
 }
 const html1 = els.acts.innerHTML;
 ctx.render();
@@ -592,6 +595,24 @@ if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_BURN_MS) !== 5
 if (ctx.sitHairPct(t0, ctx.SIT_INTERVAL_MS, t0 + ctx.SIT_INTERVAL_MS) !== 0) {
   engineProblems.push('2h clock should hit 0 when the reminder is due');
 }
+if (ctx.sitDue(t0, null, t0 + 1000, 0) !== false) {
+  engineProblems.push('interval 0 should fall back to the 2h clock, not fire immediately');
+}
+if (ctx.restoreDue(99, true, null) !== false) {
+  engineProblems.push('99% hair must not ask to restore, even if the sit clock claims due');
+}
+if (ctx.restoreDue(50, true, null) !== false) {
+  engineProblems.push('half-full hair must not ask to restore');
+}
+if (ctx.restoreDue(0, true, null) !== true) {
+  engineProblems.push('bald + sit clock due should ask to restore');
+}
+if (ctx.restoreDue(99, true, 'actJaw') !== true) {
+  engineProblems.push('an in-progress pick should keep the restore UI');
+}
+if (ctx.restoreDue(0, false, null) !== false) {
+  engineProblems.push('bald but sit clock not due should not restore-nudge');
+}
 if (ctx.displayHairPct(10, 90, t0, ctx.SIT_INTERVAL_BURN_MS, t0) !== 100) {
   engineProblems.push('just after a move, sit clock should keep the restored 100');
 }
@@ -661,6 +682,9 @@ if (!els.hair.title.includes('0%')) {
 }
 if (els.acts.hidden) engineProblems.push('1h hard-burn clock should also bring the move reminder');
 if (els.veil.hidden) engineProblems.push('1h hard-burn clock should frost the cards when hair is gone');
+if (!store.activityOffer || store.activityOffer.stage !== 'low') {
+  engineProblems.push('when hair is gone the offer must be low-stage, not quota-high seated stretches');
+}
 
 store.history = [];
 store.agents = { 'grok-build': grok };
@@ -675,6 +699,57 @@ if (engineProblems.length) {
   process.exit(1);
 }
 console.log('ok  Sit-clock hair finishes in 1h when burning hard, 2h otherwise');
+
+// --- 99% hair must never ask you to "restore" it ---
+const restoreProblems = [];
+store.agents = {
+  'grok-build': {
+    ...grok,
+    limits: [{ label: 'Weekly (SuperGrok)', percent_left: 99, resets_text: grok.limits[0].resets_text }],
+  },
+};
+store.history = [];
+delete store.hairBoostPct;
+delete store.activityPick;
+delete store.activityOffer;
+store.lastMovedAt = Date.now();
+store.activityDoneAt = store.lastMovedAt;
+ctx.render();
+if (!els.hair.title.includes('99%')) {
+  restoreProblems.push(`fresh sit clock with 99% quota should read 99% hair, got ${JSON.stringify(els.hair.title)}`);
+}
+if (!els.acts.hidden) restoreProblems.push('99% hair must not list restore activities');
+if (!els.veil.hidden) restoreProblems.push('99% hair must not frost the cards');
+if (els.acts.innerHTML.includes('grow the hair') || els.acts.innerHTML.includes('长回来') || els.acts.innerHTML.includes('复原')) {
+  restoreProblems.push('restore copy must not appear while hair is 99%');
+}
+
+store.lastMovedAt = Date.now() - ctx.SIT_INTERVAL_MS - 1000;
+store.activityDoneAt = store.lastMovedAt;
+store.activityOffer = null;
+ctx.render();
+if (!els.hair.title.includes('0%')) {
+  restoreProblems.push(`after the sit clock, 99% quota should still show 0% hair, got ${JSON.stringify(els.hair.title)}`);
+}
+if (els.acts.hidden) restoreProblems.push('when hair is actually gone, restore activities should show');
+if (!store.activityOffer || store.activityOffer.stage !== 'low') {
+  restoreProblems.push(`gone hair should draw from the low pool, got ${JSON.stringify(store.activityOffer)}`);
+}
+if ((store.activityOffer.ids || []).some((id) => ctx.activityIds('high').includes(id))) {
+  restoreProblems.push('must not offer seated high-stage stretches (jaw / calves) after a 2h sit');
+}
+
+store.agents = { 'grok-build': grok };
+delete store.hairBoostPct;
+delete store.activityPick;
+delete store.activityOffer;
+store.lastMovedAt = Date.now();
+ctx.render();
+if (restoreProblems.length) {
+  console.error(restoreProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  99% hair never asks to restore; gone hair uses the leave-the-desk pool');
 
 // --- Buddy wander: long smooth glides, not a ±18px fidget ---
 const wanderProblems = [];
