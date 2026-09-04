@@ -40,6 +40,7 @@ try {
     assert.ok(html.includes('property="og:image" content="https://token-tracking.philosophie.ai/og-image.png"'), `${name}: og:image is the 1200x630 card, not the 128px icon`);
     assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), `${name}: twitter:card so X renders a large preview`);
     assert.ok(html.includes('name="twitter:image" content="https://token-tracking.philosophie.ai/og-image.png"'), `${name}: twitter:image matches og:image`);
+    assert.ok(!html.includes('Coding Agents Usage'), `${name}: old brand name is gone`);
   }
 
   // English pages.
