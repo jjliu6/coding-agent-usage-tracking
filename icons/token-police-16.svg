@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- 16px toolbar variant: wide shield + token disc, no hairline details. -->
+  <rect width="16" height="16" rx="3.5" fill="#14161c"/>
+  <path fill="#5CD6B3" d="M2.7 3.7c0-1.15 2.1-1.9 5.3-1.9s5.3.75 5.3 1.9c0 4.55-2.7 7.15-5.3 8.55C5.4 10.85 2.7 8.25 2.7 3.7z"/>
+  <circle cx="8" cy="5.85" r="3.05" fill="#eef1f6"/>
+  <circle cx="8" cy="5.85" r="1.05" fill="#1f9d7c"/>
+</svg>
