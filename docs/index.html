@@ -14,14 +14,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- build:root-redirect -->
-<title data-i18n="meta.title">Coding Agents Usage — see your remaining Claude Code, Codex, Cursor, Grok &amp; Gemini quota at a glance</title>
+<title data-i18n="meta.title">Token Police — see your remaining Claude Code, Codex, Cursor, Grok &amp; Gemini quota at a glance</title>
 <meta name="description" data-i18n-content="meta.description" content="A free, open-source Chrome extension that shows how much usage you have left for Claude Code, Codex, Grok, Cursor, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account, nothing leaves your browser.">
 <link rel="icon" href="/icon-128.png">
 <link rel="canonical" href="{{canonical}}">
 <link rel="alternate" hreflang="en" href="https://token-tracking.philosophie.ai/en/">
 <link rel="alternate" hreflang="zh-CN" href="https://token-tracking.philosophie.ai/zh/">
 <link rel="alternate" hreflang="x-default" href="https://token-tracking.philosophie.ai/en/">
-<meta property="og:title" data-i18n-content="meta.ogTitle" content="Coding Agents Usage — your AI coding quota, at a glance">
+<meta property="og:title" data-i18n-content="meta.ogTitle" content="Token Police — your AI coding quota, at a glance">
 <meta property="og:description" data-i18n-content="meta.ogDescription" content="Free Chrome extension: remaining usage for Claude Code, Codex, Cursor, Grok and Gemini in one side panel. Download the latest release.">
 <meta property="og:image" content="https://token-tracking.philosophie.ai/icon-128.png">
 <meta property="og:type" content="website">
@@ -196,7 +196,7 @@
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#"><img src="/icon-128.png" alt=""><span data-i18n="brand">Coding Agents Usage</span></a>
+    <a class="brand" href="#"><img src="/icon-128.png" alt=""><span data-i18n="brand">Token Police</span></a>
     <nav class="links">
       <a href="#features" data-i18n="nav.features">Features</a>
       <a href="#install" data-i18n="nav.install">Install</a>
@@ -216,7 +216,7 @@
       <p class="lead" data-i18n="hero.lead">One side panel shows your remaining usage for Claude Code, Codex, Cursor, Grok, Grok Bot and Gemini — with reset times, burn rate and low-quota alerts. No account linking, no API keys, and nothing leaves your browser. And a little hair mascot that loses hair as you burn quota and makes you stand up now and then.</p>
 
       <div class="cta">
-        <a class="btn btn-primary" id="download" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">
+        <a class="btn btn-primary" id="download" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/token-police.zip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
           <span class="stack">
             <span data-i18n="hero.download">Download for Chrome</span>
@@ -346,7 +346,7 @@
       <div class="step">
         <div>
           <h3 data-i18n="install.s1h">Download the .zip</h3>
-          <p data-i18n-html="install.s1p">Use the <a href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">Download</a> button on this page. It is always the newest release.</p>
+          <p data-i18n-html="install.s1p">Use the <a href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/token-police.zip">Download</a> button on this page. It is always the newest release.</p>
         </div>
       </div>
       <div class="step">
@@ -458,7 +458,7 @@
     <h2 data-i18n="bottom.h2">Ready? It's free.</h2>
     <p class="lead" style="margin: 0 auto" data-i18n="bottom.lead">Download, unzip, load the folder. Two minutes from now you'll know exactly how much quota you have left.</p>
     <div class="cta">
-      <a class="btn btn-primary" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/coding-agents-usage.zip">
+      <a class="btn btn-primary" href="https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/token-police.zip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
         <span class="stack"><span data-i18n="hero.download">Download for Chrome</span><span class="sub" id="dl-sub2" data-i18n="hero.downloadSub">.zip · latest release</span></span>
       </a>
@@ -504,7 +504,7 @@ document.querySelector('.demo .vid').addEventListener('click', () => {
       time (fallback if the API is rate-limited) → generic label.
    ===================================================================== */
 const REPO = 'jjliu6/coding-agent-usage-tracking';
-const ASSET = 'coding-agents-usage.zip';
+const ASSET = 'token-police.zip';
 let release = null; // { version, publishedAt, size, downloads }
 
 function parseVersionTag(tag) {

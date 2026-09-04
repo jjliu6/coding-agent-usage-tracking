@@ -37,7 +37,7 @@ try {
   // English pages.
   assert.ok(en.includes('<html lang="en">'));
   assert.ok(en.includes('<link rel="canonical" href="https://token-tracking.philosophie.ai/en/">'));
-  assert.ok(en.includes('<title>Coding Agents Usage —'));
+  assert.ok(en.includes('<title>Token Police —'));
   assert.ok(en.includes('href="/zh/" hreflang="zh-CN" lang="zh-CN" title="切换到中文">中文</a>'), 'en page links to /zh/');
   assert.ok(en.includes('src="/shot-panel-en.png"') && en.includes('src="/install-demo-en.webm"'), 'en assets');
   assert.ok(!en.includes('location.replace'), '/en/ has no redirect script');
@@ -51,7 +51,7 @@ try {
   // Chinese page.
   assert.ok(zh.includes('<html lang="zh-CN">'));
   assert.ok(zh.includes('<link rel="canonical" href="https://token-tracking.philosophie.ai/zh/">'));
-  assert.ok(zh.includes('<title>Coding Agents 额度'));
+  assert.ok(zh.includes('<title>Token Police 额度'));
   assert.ok(zh.includes('<meta name="description" content="免费开源的 Chrome 扩展'), 'meta description translated');
   assert.ok(zh.includes('<meta property="og:locale" content="zh_CN">'));
   assert.ok(zh.includes('href="/en/" hreflang="en" lang="en" title="Switch to English">EN</a>'), 'zh page links to /en/');
@@ -61,7 +61,7 @@ try {
   assert.ok(!zh.includes('Ready? It\'s free.'), 'no English body text left on /zh/');
 
   // English body text is untouched on /en/ (spot checks: first and last translatable strings).
-  assert.ok(en.includes('<span>Coding Agents Usage</span>'), 'first English string kept');
+  assert.ok(en.includes('<span>Token Police</span>'), 'first English string kept');
   assert.ok(en.includes("<p>Unofficial. Not affiliated with Anthropic, OpenAI, xAI, Cursor or Google."), 'last English string kept');
 
   console.log('pages-test: OK');

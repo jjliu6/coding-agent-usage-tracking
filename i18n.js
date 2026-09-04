@@ -7,7 +7,7 @@ function currentLang() {
 
 const I18N = {
   en: {
-    brand: 'CODING AGENTS',
+    brand: 'TOKEN POLICE',
     legend: 'number = remaining',
     refresh: 'Refresh',
     fetching: 'Fetching…',
@@ -84,7 +84,7 @@ const I18N = {
     api: 'API',
   },
   zh: {
-    brand: 'CODING AGENTS 额度',
+    brand: 'TOKEN POLICE 额度',
     legend: '数字为剩余额度',
     refresh: '刷新',
     fetching: '刷新中…',

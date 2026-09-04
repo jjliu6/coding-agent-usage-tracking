@@ -1,4 +1,4 @@
 {
-  "extName": { "message": "Coding Agents Usage" },
+  "extName": { "message": "Token Police" },
   "extDesc": { "message": "See remaining usage for Claude Code, Codex, Grok, Cursor, Grok Bot and Gemini at a glance." }
 }
