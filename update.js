@@ -7,8 +7,9 @@ const UPDATE_REPO = 'jjliu6/token-police';
 // GitHub 的公开 API：返回这个仓库"最新一次 Release"的信息（tag_name 就是版本号，如 "v1.2.1"）。
 // 这个接口带 CORS 头，扩展不需要额外的 host_permissions 就能请求；不登录、不带任何用户数据。
 const UPDATE_API = 'https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest';
-// 给用户点开看的发布页（有新版时链接到这里下载）
-const UPDATE_PAGE = 'https://github.com/' + UPDATE_REPO + '/releases/latest';
+// 用户点「有新版本」时打开落地页：上面有下载按钮和安装步骤。
+// 查版本号仍走 GitHub API；不要把人丢到 Releases 页面。
+const UPDATE_PAGE = 'https://token-police.philosophie.ai/';
 // 多久查一次：一天。GitHub 匿名 API 每小时 60 次限额，一天一次绰绰有余，也不打扰用户。
 const UPDATE_INTERVAL_MS = 24 * 60 * 60000;
 // 查失败（断网等）后最少隔多久再试，避免每次唤醒 service worker 都去撞网络

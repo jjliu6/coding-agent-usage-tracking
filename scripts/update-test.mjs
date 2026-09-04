@@ -53,7 +53,7 @@ eq('defaults to manifest version (newer)', ctx.updateAvailable({ latest: '999.0.
 const API = vm.runInContext('UPDATE_API', ctx);
 const PAGE = vm.runInContext('UPDATE_PAGE', ctx);
 if (!API.startsWith('https://api.github.com/repos/jjliu6/token-police/')) problems.push(`UPDATE_API wrong: ${API}`);
-if (!PAGE.startsWith('https://github.com/jjliu6/token-police/')) problems.push(`UPDATE_PAGE wrong: ${PAGE}`);
+if (PAGE !== 'https://token-police.philosophie.ai/') problems.push(`UPDATE_PAGE should be the landing page, got ${PAGE}`);
 
 if (problems.length) {
   console.error(problems.join('\n'));

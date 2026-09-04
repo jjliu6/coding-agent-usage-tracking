@@ -918,10 +918,11 @@ function renderSettings(en, prefs) {
 }
 
 // 面板底部的版本行：
-// - 平时：  "v1.2.1"（点开是 GitHub 的发布列表）
+// - 平时：  "v1.2.1"（点开落地页）
 // - 查过了：  "v1.2.1 · up to date"
-// - 有新版：  "v1.2.1 · New version v1.3.0 available — download ↗"（橙色，链到下载页）
+// - 有新版：  "v1.2.1 · New version v1.3.0 available — download ↗"（橙色，链到落地页）
 // 版本号读自 manifest（update.js 的 currentVersion），不在这里手写。
+// 下载链接始终走 UPDATE_PAGE，不信 storage 里可能残留的 GitHub Releases URL。
 function versionLine(info) {
   const cur = currentVersion();
   if (!cur) return '';
@@ -929,7 +930,7 @@ function versionLine(info) {
     `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"${cls ? ` class="${cls}"` : ''}>${text}</a>`;
   const me = `<a href="${esc(UPDATE_PAGE)}" target="_blank" rel="noopener noreferrer" title="${esc(t('versionTitle'))}">v${esc(cur)}</a>`;
   if (updateAvailable(info, cur)) {
-    return `${me} · ${link(info.url || UPDATE_PAGE, 'new', esc(t('updateAvail', { v: 'v' + info.latest })))}`;
+    return `${me} · ${link(UPDATE_PAGE, 'new', esc(t('updateAvail', { v: 'v' + info.latest })))}`;
   }
   if (info && info.latest) return `${me} · ${esc(t('upToDate'))}`;
   return me;
