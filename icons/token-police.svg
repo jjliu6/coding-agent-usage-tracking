@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Token Police extension icon. Source for icons/16.png, 48.png, 128.png and docs/icon-128.png. -->
+  <rect width="128" height="128" rx="28" fill="#14161c"/>
+  <!-- Heater shield: police / watching the quota -->
+  <path fill="#2f8f72" d="M24 30c0-10 18-16 40-16s40 6 40 16c0 40-22 64-40 78C46 94 24 70 24 30z"/>
+  <path fill="#5CD6B3" d="M28.5 31c0-8.2 16-13.2 35.5-13.2S99.5 22.8 99.5 31c0 37-20 59-35.5 72.2C48.5 90 28.5 68 28.5 31z"/>
+  <!-- Token / coin -->
+  <circle cx="64" cy="48" r="25" fill="#eef1f6"/>
+  <circle cx="64" cy="48" r="21.5" fill="none" stroke="#c5cdd8" stroke-width="2"/>
+  <!-- Quota remaining ~75% -->
+  <circle cx="64" cy="48" r="14.5" fill="none" stroke="#d5dae2" stroke-width="5.5"/>
+  <path d="M64 33.5 A14.5 14.5 0 1 1 49.5 48" fill="none" stroke="#1f9d7c" stroke-width="5.5" stroke-linecap="round"/>
+  <!-- Four-point sparkle kept from the previous mark -->
+  <path fill="#14161c" d="M64 37.6l3.2 7.15 7.15 3.25-7.15 3.25-3.2 7.15-3.2-7.15-7.15-3.25 7.15-3.25z"/>
+</svg>
