@@ -119,8 +119,19 @@
 
   /* ---------- real screenshots of the panel ---------- */
   .shot-frame { position: relative; min-width: 0; padding-top: 34px; }
-  .shot { max-width: 380px; margin: 0 auto; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06) inset; background: #14161c; }
+  .shot { position: relative; container-type: inline-size; max-width: 380px; margin: 0 auto; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06) inset; background: #14161c; }
   .shot img { display: block; width: 100%; height: auto; }
+  /* Live version line, laid over the screenshot's baked-in one so it can never
+     go stale: an opaque strip in the exact panel background (#14161c) hides the
+     captured "vX.Y.Z · up to date" at the bottom edge, and JS (renderRelease)
+     fills in the real latest version from GitHub — the same source the Download
+     button uses. cqw keeps the text proportional as the shot scales. Hidden
+     until JS marks it .ready, so a rare failed version fetch leaves a clean
+     empty strip rather than a wrong number. */
+  .shot .shotver { position: absolute; left: 0; right: 0; bottom: 0; height: 3.8%; display: flex; align-items: center; justify-content: center; gap: .4em; background: #14161c; color: #6b7382; font-size: 1.85cqw; line-height: 1; white-space: nowrap; }
+  .shot .shotver b { color: #aab2c0; font-weight: 400; }
+  .shot .shotver > * { visibility: hidden; }
+  .shot .shotver.ready > * { visibility: visible; }
   .badge-note { position: absolute; top: 0; right: 10px; background: var(--bg-elev); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; z-index: 1; }
   .badge-note .b { background: var(--bad); color: #fff; font-weight: 700; font-size: 10px; padding: 1px 5px; border-radius: 4px; }
   .sample { text-align: center; font-size: 12px; color: var(--fg-faint); margin-top: 14px; }
@@ -242,7 +253,7 @@
 
     <div class="shot-frame">
       <div class="badge-note"><span class="b">15%</span><span data-i18n="hero.badgeNote">Toolbar badge shows your lowest quota</span></div>
-      <div class="shot"><img src="/shot-panel-{{lang}}.png" width="840" height="1520" alt="The side panel showing remaining quota for six coding agents, with the hair mascot floating over the cards" loading="eager"></div>
+      <div class="shot"><img src="/shot-panel-{{lang}}.png" width="840" height="1520" alt="The side panel showing remaining quota for six coding agents, with the hair mascot floating over the cards" loading="eager"><span class="shotver" aria-hidden="true"><b></b><span class="dot">·</span><span data-i18n="shot.uptodate">up to date</span></span></div>
       <p class="sample" data-i18n="hero.sample">The real panel, with sample data.</p>
     </div>
   </div>
@@ -312,11 +323,11 @@
     <div class="mascot-grid">
       <div class="mascot-shots">
         <figure>
-          <div class="shot"><img src="/shot-panel-{{lang}}.png" width="840" height="1520" alt="The panel with the hair mascot floating over the quota cards, showing 51% hair left" loading="lazy"></div>
+          <div class="shot"><img src="/shot-panel-{{lang}}.png" width="840" height="1520" alt="The panel with the hair mascot floating over the quota cards, showing 51% hair left" loading="lazy"><span class="shotver" aria-hidden="true"><b></b><span class="dot">·</span><span data-i18n="shot.uptodate">up to date</span></span></div>
           <figcaption data-i18n="mascot.cap1">Hair follows your average remaining quota.</figcaption>
         </figure>
         <figure>
-          <div class="shot"><img src="/shot-break-{{lang}}.png" width="840" height="1520" alt="Break time: the quota cards are frosted over and the mascot offers three short activities with a Done button" loading="lazy"></div>
+          <div class="shot"><img src="/shot-break-{{lang}}.png" width="840" height="1520" alt="Break time: the quota cards are frosted over and the mascot offers three short activities with a Done button" loading="lazy"><span class="shotver" aria-hidden="true"><b></b><span class="dot">·</span><span data-i18n="shot.uptodate">up to date</span></span></div>
           <figcaption data-i18n="mascot.cap2">Break time: cards frost over until you finish one activity.</figcaption>
         </figure>
       </div>
@@ -524,6 +535,13 @@ function renderRelease() {
   v.textContent = 'v' + release.version;
   const subs = [document.getElementById('dl-sub'), document.getElementById('dl-sub2')];
   subs.forEach((el) => { if (el) el.textContent = '.zip · v' + release.version; });
+  // Fill the live version line laid over each screenshot (see .shotver in CSS),
+  // so the panel shots always show the same latest version as the Download button.
+  document.querySelectorAll('.shotver').forEach((el) => {
+    const b = el.querySelector('b');
+    if (b) b.textContent = 'v' + release.version;
+    el.classList.add('ready');
+  });
   if (release.publishedAt) {
     const date = new Date(release.publishedAt);
     const text = new Intl.DateTimeFormat(LANG === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);

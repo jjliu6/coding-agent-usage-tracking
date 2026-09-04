@@ -26,6 +26,7 @@ export default {
   'hero.compat': '支持 Chrome 及其他 Chromium 内核浏览器（Edge、Brave、Arc）。这个按钮永远指向 GitHub 上最新发布的版本，不会下到旧版。',
   'hero.badgeNote': '工具栏角标显示最低的那个额度',
   'hero.sample': '真实面板，数据为示例。',
+  'shot.uptodate': '已是最新',
   'mascot.eyebrow': 'v1.3 新增 · 也要记得休息',
   'mascot.h2': '一个随着额度消耗掉头发的小人，会催你起来动一动。',
   'mascot.lead': 'vibe coding 时会耗尽的不只是额度。面板里现在多了一个小伙伴，顺便也盯着你。',
