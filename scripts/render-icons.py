@@ -31,10 +31,13 @@ def main() -> None:
     src = ICONS / "token-police.svg"
     src16 = ICONS / "token-police-16.svg"
     icon128 = raster(src, 128)
-    save(icon128, ICONS / "128.png")
+    # New filenames on purpose: Chrome caches action icons by path, so
+    # replacing 16.png in place often leaves the old toolbar mark.
+    save(icon128, ICONS / "mark-128.png")
     save(icon128, DOCS / "icon-128.png")
-    save(raster(src, 48), ICONS / "48.png")
-    save(raster(src16, 16), ICONS / "16.png")
+    save(raster(src, 48), ICONS / "mark-48.png")
+    save(raster(src, 32), ICONS / "mark-32.png")
+    save(raster(src16, 16), ICONS / "mark-16.png")
 
 
 if __name__ == "__main__":

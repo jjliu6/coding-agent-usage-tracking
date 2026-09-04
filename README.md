@@ -79,7 +79,7 @@ replace the folder's contents, then click the ↻ reload button on the extension
 - `content.js` — content script that reads usage numbers from each product page
 - `popup.html` / `popup.js` / `i18n.js` / `activities.js` — the side-panel dashboard (English / 中文) and the rest/move activity pool
 - `_locales/` — Chrome Store / `chrome://extensions` name and description
-- `icons/` — extension icons (`token-police.svg` is the source; `python3 scripts/render-icons.py` writes the PNGs)
+- `icons/` — extension icons (`token-police.svg` is the source; `python3 scripts/render-icons.py` writes `mark-*.png`)
 - `docs/` — the landing page (`index.html`) published to GitHub Pages, plus README screenshots
 
 ## Development

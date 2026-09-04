@@ -166,7 +166,7 @@ function maybeNotify(a, oldPct, pct) {
     const reset = a.limits && a.limits[0] && a.limits[0].resets_text;
     chrome.notifications.create('low-' + a.id + '-' + crossed[crossed.length - 1], {
       type: 'basic',
-      iconUrl: 'icons/128.png',
+      iconUrl: 'icons/mark-128.png',
       title: t('lowTitle', { name: (meta && meta.name) || a.id, n: pct }),
       message: reset ? t('lowBodyR', { r: reset }) : t('lowBody'),
     }, () => void chrome.runtime.lastError);
@@ -204,7 +204,7 @@ function maybeMoveNudge(a, hist) {
     const meta = AGENTS.find((x) => x.id === a.id);
     chrome.notifications.create('move-' + a.id + '-' + now, {
       type: 'basic',
-      iconUrl: 'icons/128.png',
+      iconUrl: 'icons/mark-128.png',
       title: t('moveTitle', { name: (meta && meta.name) || a.id, n: Math.round(burn) }),
       message: t('moveBody'),
     }, () => void chrome.runtime.lastError);
