@@ -54,13 +54,13 @@ def main():
     canvas.paste(icon, (72, 72), icon)
 
     draw = ImageDraw.Draw(canvas)
-    title = font("Inter-Bold.ttf", 44)
+    title = font("Inter-Bold.ttf", 52)
     tag = font("Inter-SemiBold.ttf", 24)
     body = font("Inter-Medium.ttf", 20)
     chip_font = font("Inter-SemiBold.ttf", 17)
     foot = font("Inter-Medium.ttf", 16)
 
-    draw.text((188, 78), "Coding Agents Usage", font=title, fill=FG)
+    draw.text((188, 78), "Token Police", font=title, fill=FG)
     draw.text((188, 134), "Your AI coding quota, at a glance.", font=tag, fill=ACCENT)
 
     draw.multiline_text(
@@ -97,6 +97,11 @@ def main():
     scale = target_w / shot.width
     shot = shot.resize((target_w, int(shot.height * scale)), Image.Resampling.LANCZOS)
     shot = shot.crop((0, 0, shot.width, 530))
+    # Screenshots still say CODING AGENTS; cover that header until they are recaptured.
+    header = font("Inter-Bold.ttf", 13)
+    hd = ImageDraw.Draw(shot)
+    hd.rectangle((0, 0, shot.width, 40), fill=(20, 22, 28, 255))
+    hd.text((14, 12), "✦  TOKEN POLICE", font=header, fill=FG)
     shot = rounded(shot, 20)
 
     sx, sy = 760, 36
