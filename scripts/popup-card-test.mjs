@@ -146,7 +146,7 @@ const problems = [];
 
 if (ctx.currentLang() !== 'en') problems.push(`default language should be en, got ${ctx.currentLang()}`);
 if (uiLanguageCalls !== 0) problems.push('dashboard language must not follow chrome.i18n.getUILanguage');
-if (els['brand-name'].textContent !== 'CODING AGENTS') {
+if (els['brand-name'].textContent !== 'TOKEN POLICE') {
   problems.push(`default brand should be English, got ${JSON.stringify(els['brand-name'].textContent)}`);
 }
 if (els.legend.textContent !== 'number = remaining') {
@@ -638,7 +638,7 @@ if (!htmlZh.includes('>剩余<')) zhProblems.push('Chinese card should say 剩�
 if (htmlZh.includes('>left<')) zhProblems.push('Chinese card should not say left');
 if (els.lang.textContent !== 'EN') zhProblems.push(`Chinese UI should show an EN button, got ${JSON.stringify(els.lang.textContent)}`);
 if (els.refresh.textContent !== '刷新') zhProblems.push(`Chinese refresh label should be 刷新, got ${JSON.stringify(els.refresh.textContent)}`);
-if (els['brand-name'].textContent !== 'CODING AGENTS 额度') {
+if (els['brand-name'].textContent !== 'TOKEN POLICE 额度') {
   zhProblems.push(`Chinese brand, got ${JSON.stringify(els['brand-name'].textContent)}`);
 }
 if (popupCtx.document.documentElement.lang !== 'zh') {
