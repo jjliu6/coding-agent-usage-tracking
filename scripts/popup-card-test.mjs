@@ -727,6 +727,9 @@ if (!/\.buddy\.dragging\{[^}]*transition:\s*none/.test(htmlCss)) {
 if (!/background:rgba\(20,22,28,\.2[0-8]\)/.test(htmlCss) || !/backdrop-filter:blur\(/.test(htmlCss)) {
   wanderProblems.push('buddy card should be a frosted glass so quota text shows through');
 }
+if (!/\.say\{[^}]*font-size:10px/.test(htmlCss) || !/\.say\{[^}]*background:rgba\(26,30,38/.test(htmlCss)) {
+  wanderProblems.push('say bubble should stay small and dark so it does not steal the dashboard');
+}
 if (wanderProblems.length) {
   console.error(wanderProblems.join('\n'));
   process.exit(1);

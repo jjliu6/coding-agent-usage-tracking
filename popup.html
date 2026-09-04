@@ -22,9 +22,8 @@
   .buddy.wander .mascot{animation:buddy-bob 2.8s ease-in-out infinite}
   .buddy.dragging .mascot{animation:none}
   @keyframes buddy-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-  .say{position:absolute;left:10px;right:10px;bottom:calc(100% - 4px);z-index:3;margin:0;padding:7px 10px 9px;background:rgba(255,246,220,.94);color:#3a2a18;font-size:12px;font-weight:650;line-height:1.35;border-radius:14px 14px 14px 5px;box-shadow:0 6px 16px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.01em}
-  .say:after{content:"";position:absolute;left:22px;bottom:-6px;border:6px solid transparent;border-top-color:rgba(255,246,220,.94);border-bottom:0}
-  .say.on{animation:say-pop .28s ease}
+  .say{position:absolute;left:16px;right:16px;bottom:calc(100% - 2px);z-index:3;margin:0;padding:4px 8px 5px;background:rgba(26,30,38,.55);color:#b4bcc8;font-size:10px;font-weight:500;line-height:1.3;border-radius:8px 8px 8px 3px;border:1px solid rgba(255,255,255,.08);box-shadow:0 3px 10px rgba(0,0,0,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);pointer-events:none}
+  .say:after{content:"";position:absolute;left:16px;bottom:-5px;border:5px solid transparent;border-top-color:rgba(26,30,38,.55);border-bottom:0}
   @keyframes say-pop{from{opacity:0;transform:translateY(5px) scale(.94)}to{opacity:1;transform:none}}
   .acts{margin-top:10px}
   .acts .ttl{font-size:11px;color:var(--ink2);line-height:1.4;margin-bottom:8px}
