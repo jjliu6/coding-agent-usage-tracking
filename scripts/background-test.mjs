@@ -21,7 +21,7 @@ const alarms = { created: [], cleared: 0, listener: null, live: {} };
 const notifications = [];
 const fetches = [];
 // 假的 GitHub API：默认回 v9.9.9（比任何已装版本都新）；可以改成失败
-let fetchReply = { ok: true, json: () => Promise.resolve({ tag_name: 'v9.9.9', html_url: 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v9.9.9' }) };
+let fetchReply = { ok: true, json: () => Promise.resolve({ tag_name: 'v9.9.9', html_url: 'https://github.com/jjliu6/token-police/releases/tag/v9.9.9' }) };
 const storageListeners = [];
 const onRemovedListeners = [];
 let nextTabId = 100;
@@ -256,13 +256,13 @@ if (!rr || rr['grok-build'] !== 'fail') problems.push(`an agent whose page never
 
 // 13) 更新检查：启动时查一次 GitHub、存结果；每天一次的闹钟；关掉开关就清掉
 await tick(10);
-if (fetches.length !== 1 || !fetches[0].url.startsWith('https://api.github.com/repos/jjliu6/coding-agent-usage-tracking/releases/latest')) {
+if (fetches.length !== 1 || !fetches[0].url.startsWith('https://api.github.com/repos/jjliu6/token-police/releases/latest')) {
   problems.push(`startup should ask the GitHub releases API once, got ${JSON.stringify(fetches)}`);
 }
 if (!store.updateCheck || store.updateCheck.latest !== '9.9.9' || !store.updateCheck.checkedAt) {
   problems.push(`updateCheck should record the latest release, got ${JSON.stringify(store.updateCheck)}`);
 }
-if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/tag/v9.9.9') {
+if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/token-police/releases/tag/v9.9.9') {
   problems.push(`updateCheck should keep the release page url, got ${JSON.stringify(store.updateCheck)}`);
 }
 if (!alarms.created.some((a) => a.name === 'updateCheck' && a.periodInMinutes === 1440)) {
@@ -283,7 +283,7 @@ if (!store.updateCheck || store.updateCheck.latest !== '9.9.9' || !store.updateC
 fetchReply = { ok: true, json: () => Promise.resolve({ tag_name: 'v9.9.9', html_url: 'https://evil.example/x' }) };
 alarms.listener({ name: 'updateCheck' });
 await tick(10);
-if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest') {
+if (!store.updateCheck || store.updateCheck.url !== 'https://github.com/jjliu6/token-police/releases/latest') {
   problems.push(`non-GitHub html_url should fall back to the releases page, got ${JSON.stringify(store.updateCheck)}`);
 }
 // 关掉开关：清闹钟、清结果、不再请求

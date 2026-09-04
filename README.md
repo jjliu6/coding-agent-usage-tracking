@@ -9,14 +9,14 @@ A Chrome (Manifest V3) browser extension that shows your remaining usage for
 
 ## Download
 
-[![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/coding-agent-usage-tracking?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/token-police.zip)
-[![Total downloads](https://img.shields.io/github/downloads/jjliu6/coding-agent-usage-tracking/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/coding-agent-usage-tracking/releases)
+[![Download the latest release (.zip)](https://img.shields.io/github/v/release/jjliu6/token-police?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20Download%20Chrome%20extension%20(.zip)&color=1a73e8)](https://github.com/jjliu6/token-police/releases/latest/download/token-police.zip)
+[![Total downloads](https://img.shields.io/github/downloads/jjliu6/token-police/total?style=for-the-badge&label=downloads&color=1f9d7c)](https://github.com/jjliu6/token-police/releases)
 
 The version on the button is the one you get. No GitHub account, no git, no build step —
-[download the latest release](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/token-police.zip),
+[download the latest release](https://github.com/jjliu6/token-police/releases/latest/download/token-police.zip),
 unzip it, and load the folder in Chrome. See [Install](#install) below. Every release also ships a
 versioned copy (`token_police-<version>.zip`) on the
-[releases page](https://github.com/jjliu6/coding-agent-usage-tracking/releases) if you want to keep
+[releases page](https://github.com/jjliu6/token-police/releases) if you want to keep
 several versions around.
 
 **Not a GitHub person?** The same download plus step-by-step install instructions live on the
@@ -24,7 +24,7 @@ several versions around.
 anyone who just wants the extension. It shows the same latest version as the button above.
 
 <sub>Want the newest unreleased code instead? Grab the
-[source zip of `main`](https://github.com/jjliu6/coding-agent-usage-tracking/archive/refs/heads/main.zip) —
+[source zip of `main`](https://github.com/jjliu6/token-police/archive/refs/heads/main.zip) —
 it installs the same way, just with a few extra development files in the folder.</sub>
 
 ## What it does
@@ -52,7 +52,7 @@ it installs the same way, just with a few extra development files in the folder.
 
 ## Install
 
-1. **[Download the extension as a .zip](https://github.com/jjliu6/coding-agent-usage-tracking/releases/latest/download/token-police.zip)**
+1. **[Download the extension as a .zip](https://github.com/jjliu6/token-police/releases/latest/download/token-police.zip)**
    (or clone this repository, if you prefer git).
 2. **Unzip** the file (double-click on macOS, right-click → **Extract All…** on Windows).
    You'll get a folder with `manifest.json` inside — keep it somewhere permanent
