@@ -714,6 +714,28 @@ if (avgDist < 40) {
   wanderProblems.push(`average wander step should roam, got ${avgDist.toFixed(1)}px`);
 }
 const htmlCss = readFileSync(resolve(root, 'popup.html'), 'utf8');
+const layoutProblems = [];
+if (/min-height:\s*100vh/.test(htmlCss)) {
+  layoutProblems.push('side panel must not use 100vh — Chrome’s panel header clips the footer');
+}
+if (!/overflow-y:\s*auto/.test(htmlCss)) {
+  layoutProblems.push('body should scroll inside the side panel (overflow-y: auto)');
+}
+if (!/class="bottom"/.test(htmlCss) || !/\.bottom\{/.test(htmlCss)) {
+  layoutProblems.push('version + credits should sit in a .bottom footer that cannot be crushed');
+}
+if (!/\.hint:empty\{display:none/.test(htmlCss)) {
+  layoutProblems.push('empty hint must not leave a gap above the version line');
+}
+if (!/\.ver\{[^}]*overflow-wrap:\s*anywhere/.test(htmlCss)) {
+  layoutProblems.push('version line should wrap instead of overflowing the panel');
+}
+if (layoutProblems.length) {
+  console.error(layoutProblems.join('\n'));
+  process.exit(1);
+}
+console.log('ok  Side panel footer can scroll and wrap instead of clipping');
+
 if (!/transition:\s*left 2\.4s/.test(htmlCss) || !/top 2\.4s/.test(htmlCss)) {
   wanderProblems.push('buddy should CSS-ease left/top so glides are smooth');
 }
