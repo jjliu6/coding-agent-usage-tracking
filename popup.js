@@ -286,7 +286,7 @@ function hairLockPath(x0, y0, cx, cy, x1, y1, w) {
 
 function hairLockEl(i, visible) {
   const [x0, y0, cx, cy, x1, y1, w] = HAIR_LOCKS[i];
-  return `<path class="h${visible ? '' : ' off'}" data-i="${i}" d="${hairLockPath(x0, y0, cx, cy, x1, y1, w)}" fill="${HAIR_FILL}" stroke="${HAIR_EDGE}" stroke-width="1.05" stroke-linejoin="round"/>`;
+  return `<path class="h${visible ? '' : ' off'}" data-i="${i}" style="--i:${i}" d="${hairLockPath(x0, y0, cx, cy, x1, y1, w)}" fill="${HAIR_FILL}" stroke="${HAIR_EDGE}" stroke-width="1.05" stroke-linejoin="round"/>`;
 }
 
 function mouthMood(pct) {
@@ -508,7 +508,65 @@ function scheduleHairTick(lastMovedAt, interval, now) {
   hairTickTimer = setTimeout(render, wait);
 }
 
+// 点「完成」后播一次长发闪光：逐缕长回 + 星点。只在这一次重绘里触发，重开面板不重播。
+var hairRegrowFx = false;
+var hairRegrowTimer = null;
+var HAIR_REGROW_MS = 2200;
+
+function growFxMarkup() {
+  const bits = [
+    [18, 16, 0.04, 1],
+    [74, 12, 0.14, 1.15],
+    [48, 4, 0.26, 0.85],
+    [8, 38, 0.2, 1.05],
+    [90, 34, 0.32, 0.9],
+    [28, 8, 0.4, 1.2],
+    [64, 20, 0.08, 0.75],
+    [42, 30, 0.48, 1],
+    [80, 50, 0.36, 0.8],
+    [22, 52, 0.44, 0.7],
+  ];
+  const dots = bits.map(([l, t, d, s]) =>
+    `<i style="left:${l}%;top:${t}%;--d:${d}s;--s:${s}"></i>`
+  ).join('');
+  return `<span class="grow-fx" aria-hidden="true">${dots}</span>`;
+}
+
+function stopHairRegrow(box) {
+  if (hairRegrowTimer != null && typeof clearTimeout === 'function') {
+    clearTimeout(hairRegrowTimer);
+    hairRegrowTimer = null;
+  }
+  if (!box) return;
+  if (box.classList && box.classList.remove) box.classList.remove('regrow');
+  const fx = box.querySelector ? box.querySelector('.grow-fx') : null;
+  if (fx && fx.parentNode) fx.parentNode.removeChild(fx);
+}
+
+function startHairRegrow(box) {
+  if (!box) return;
+  if (box.classList && box.classList.add) box.classList.add('regrow');
+  const strands = box.querySelectorAll ? box.querySelectorAll('.h') : null;
+  if (strands && strands.forEach) {
+    strands.forEach((el) => {
+      if (el.style && el.style.setProperty) el.style.setProperty('--i', String(+el.dataset.i || 0));
+    });
+  }
+  if (box.querySelector && !box.querySelector('.grow-fx') && box.insertAdjacentHTML) {
+    box.insertAdjacentHTML('beforeend', growFxMarkup());
+  }
+  if (hairRegrowTimer != null && typeof clearTimeout === 'function') clearTimeout(hairRegrowTimer);
+  if (typeof setTimeout === 'function') {
+    hairRegrowTimer = setTimeout(() => {
+      hairRegrowTimer = null;
+      stopHairRegrow(box);
+    }, HAIR_REGROW_MS);
+  }
+  blurtSay(100, false, null, 'regrow');
+}
+
 function completeActivity() {
+  hairRegrowFx = true;
   chrome.storage.local.get(['agents', 'enabledAgents'], (res) => {
     const en = res.enabledAgents || {};
     const shown = ORDER.filter((id) => en[id] !== false);
@@ -700,6 +758,10 @@ var SAYS = {
     zh: ['站起来晃两下嘛', '草还在外面长着呢', '动一动，我想留点发', '去做那个，别光点着玩', '起来，vibe 也要呼吸', '摸摸草，字面意思', '椅子会想你的，去吧', '先动，再继续造'],
     en: ['stand up. wiggle. please', 'grass is still growing out there', 'move. i\'d like to keep these', 'go do the thing. don\'t just hover', 'vibe needs oxygen too', 'touch grass. the plant', 'the chair will miss you. go', 'stretch first, then keep building'],
   },
+  regrow: {
+    zh: ['发回来了！', '这下值了', '头皮回温', '根根到位', '谢了，真的', '又是满头的一天', '动得漂亮', '发比额度先回来'],
+    en: ["hair's back!", 'worth the wiggle', 'follicles online', 'scalp: restored', 'ok that helped', 'full head. for now', 'nice move', 'tokens stay. hair stays'],
+  },
 };
 var SAY_FIRST_MS = 2200;
 var SAY_MIN_GAP_MS = 18000;
@@ -744,12 +806,12 @@ function hideSay() {
   }
 }
 
-function blurtSay(pct, due, rnd) {
+function blurtSay(pct, due, rnd, stage) {
   const buddy = document.getElementById('buddy');
   const el = document.getElementById('say');
   if (!buddy || buddy.hidden || !el) return '';
   if (buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging')) return '';
-  const line = pickSay(sayStage(pct, due), currentLang(), lastSays, rnd);
+  const line = pickSay(stage || sayStage(pct, due), currentLang(), lastSays, rnd);
   if (!line) return '';
   lastSays.push(line);
   if (lastSays.length > 3) lastSays.shift();
@@ -824,8 +886,16 @@ function renderHair(pct, show) {
   const box = document.getElementById('hair');
   if (!box) return;
   box.hidden = show === false || pct == null;
-  if (box.hidden) return;
+  if (box.hidden) {
+    hairRegrowFx = false;
+    stopHairRegrow(box);
+    return;
+  }
+  // 点完「完成」这一帧才播长发闪光；普通重绘（掉发、刷新）不要重来一遍。
+  const grew = !!(hairRegrowFx && pct > RESTORE_HAIR_MAX);
+  hairRegrowFx = false;
   box.title = t('hairTip', { n: pct });
+  if (grew && box.classList && box.classList.add) box.classList.add('regrow');
   // 已经画过就只切换 class，保留原来的 DOM 节点，CSS 过渡才会播放"掉发"动画
   const strands = box.querySelectorAll ? box.querySelectorAll('.h') : null;
   if (strands && strands.length === HAIR_N) {
@@ -846,8 +916,9 @@ function renderHair(pct, show) {
     const lab = box.querySelector('.hl i');
     if (lab) lab.textContent = t('hairLabel');
   } else {
-    box.innerHTML = hairHead(pct) + `<span class="hl"><b style="color:${health(pct)}">${pct}%</b><i>${t('hairLabel')}</i></span>`;
+    box.innerHTML = hairHead(pct) + `<span class="hl"><b style="color:${health(pct)}">${pct}%</b><i>${t('hairLabel')}</i></span>` + (grew ? growFxMarkup() : '');
   }
+  if (grew) startHairRegrow(box);
 }
 
 function openLink(id) {
