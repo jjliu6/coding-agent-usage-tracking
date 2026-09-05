@@ -715,7 +715,13 @@ function markCopied() {
 }
 function copyShareLink() {
   const { url } = sharePayload();
-  // execCommand must run in the same turn as the click (user activation).
+  markCopied();
+  // Prefer the async Clipboard API so a blocked execCommand cannot freeze
+  // this click (and the Copied paint) behind a permission prompt.
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).catch(() => {});
+    return;
+  }
   const ta = document.createElement('textarea');
   ta.value = url;
   ta.setAttribute('readonly', '');
@@ -725,10 +731,6 @@ function copyShareLink() {
   ta.select();
   try { document.execCommand('copy'); } catch (e) { /* ignore */ }
   document.body.removeChild(ta);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).catch(() => {});
-  }
-  markCopied();
 }
 if (copyBtn) copyBtn.addEventListener('click', copyShareLink);
 </script>
