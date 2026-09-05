@@ -537,11 +537,23 @@ if (ctx.clampHairBoost(100, 40) !== 0) {
 }
 store.activityPick = 'actWalk';
 ctx.completeActivity();
+if (!ctx.hairRegrowFx) growProblems.push('complete should arm the grow-back flash');
 if (store.hairBoostPct !== 33) {
   growProblems.push(`complete at 67% remaining should set boost 33, got ${store.hairBoostPct}`);
 }
 if (store.activityPick != null) growProblems.push('complete should clear the pick');
 if (store.activityOffer != null) growProblems.push('complete should clear the offer so the next round shuffles again');
+const hairClasses = new Set();
+els.hair.classList = {
+  add: (c) => hairClasses.add(c),
+  remove: (c) => { hairClasses.delete(c); },
+  contains: (c) => hairClasses.has(c),
+  toggle: (c, on) => {
+    if (on === false) hairClasses.delete(c);
+    else if (on === true || !hairClasses.has(c)) hairClasses.add(c);
+    else hairClasses.delete(c);
+  },
+};
 ctx.render();
 if (strandsOn(els.hair.innerHTML) !== 24) {
   growProblems.push(`after Done, hair should be full (24), got ${strandsOn(els.hair.innerHTML)}`);
@@ -549,6 +561,33 @@ if (strandsOn(els.hair.innerHTML) !== 24) {
 if (!els.hair.innerHTML.includes('data-mood="smile"')) growProblems.push('restored hair should smile');
 if (!els.hair.title.includes('100%')) {
   growProblems.push(`restored tooltip should be 100%, got ${JSON.stringify(els.hair.title)}`);
+}
+if (!hairClasses.has('regrow')) growProblems.push('Done should put .regrow on the mascot');
+if (!els.hair.innerHTML.includes('class="grow-fx"')) {
+  growProblems.push('Done should sprinkle sparkles while hair grows back');
+}
+if ((els.hair.innerHTML.match(/class="grow-fx"/g) || []).length !== 1) {
+  growProblems.push('sparkle overlay should appear once');
+}
+if ((els.hair.innerHTML.match(/<span class="grow-fx"[\s\S]*?<\/span>/) || [''])[0].split('<i ').length - 1 < 8) {
+  growProblems.push('grow-back sparkles should have several stars');
+}
+if (ctx.sayPool('regrow', 'en').indexOf(els.say.textContent) === -1) {
+  growProblems.push(`Done should blurt a grow-back line, got ${JSON.stringify(els.say.textContent)}`);
+}
+if (!ctx.hairHead(100).includes('style="--i:0"') || !ctx.hairHead(100).includes('style="--i:23"')) {
+  growProblems.push('locks should carry --i so the sprout stagger can run');
+}
+if (!ctx.growFxMarkup().includes('class="grow-fx"')) growProblems.push('growFxMarkup should render the sparkle overlay');
+const popupCss = readFileSync(resolve(root, 'popup.html'), 'utf8');
+if (!/@keyframes hair-sprout/.test(popupCss) || !/@keyframes spark-pop/.test(popupCss) || !/@keyframes hair-flash/.test(popupCss)) {
+  growProblems.push('regrow CSS should sprout locks, flash, and sparkle');
+}
+if (!/\.buddy\.wander \.mascot\.regrow/.test(popupCss)) {
+  growProblems.push('regrow pop should override the idle bob');
+}
+if (!/\.mascot\.regrow \.h\.off/.test(popupCss)) {
+  growProblems.push('locks that stay off during the flash must not pop back in');
 }
 store.agents = {
   'grok-build': {
@@ -559,6 +598,9 @@ store.agents = {
 ctx.render();
 if (strandsOn(els.hair.innerHTML) !== 22) {
   growProblems.push(`further burn 57+33=90 should show 22 strands, got ${strandsOn(els.hair.innerHTML)}`);
+}
+if (els.hair.innerHTML.includes('grow-fx')) {
+  growProblems.push('sparkles should not stick around on later renders');
 }
 store.agents = { 'grok-build': grok };
 store.hairBoostPct = 90;
@@ -575,7 +617,7 @@ if (growProblems.length) {
   console.error(growProblems.join('\n'));
   process.exit(1);
 }
-console.log('ok  Completing a move restores hair to 100%; later burns thin it again');
+console.log('ok  Completing a move restores hair to 100% with a sparkle; later burns thin it again');
 
 // --- Sit-clock hair engine: 1h hard-burn / 2h normal, quota is a ceiling ---
 const engineProblems = [];
@@ -919,7 +961,7 @@ console.log('ok  Dragging the mascot follows the cursor instead of the 7.2s wand
 
 // --- Occasional mouth blurts, stage + language aware ---
 const sayProblems = [];
-['high', 'mid', 'low', 'due'].forEach((stage) => {
+['high', 'mid', 'low', 'due', 'regrow'].forEach((stage) => {
   ['zh', 'en'].forEach((lang) => {
     const pool = ctx.sayPool(stage, lang);
     if (pool.length < 8) sayProblems.push(`${stage}/${lang} should have ≥8 lines, got ${pool.length}`);
@@ -952,6 +994,10 @@ if (els.say.textContent.includes('<')) sayProblems.push('say must use textConten
 ctx.blurtSay(10, false, () => 0);
 if (ctx.sayPool('low', 'en').indexOf(els.say.textContent) === -1 && ctx.sayPool('low', 'zh').indexOf(els.say.textContent) === -1) {
   sayProblems.push(`10% hair should pick a low-stage line, got ${JSON.stringify(els.say.textContent)}`);
+}
+const grewLine = ctx.blurtSay(100, false, () => 0, 'regrow');
+if (ctx.sayPool('regrow', 'en').indexOf(grewLine) === -1) {
+  sayProblems.push(`regrow blurt should pick a grow-back line, got ${JSON.stringify(grewLine)}`);
 }
 ctx.hideSay();
 if (!els.say.hidden) sayProblems.push('hideSay should hide the bubble');

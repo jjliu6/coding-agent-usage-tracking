@@ -15,16 +15,32 @@
   .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
   .brand{font-weight:700;letter-spacing:.12em;font-size:12px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .brand .s{color:#8fe3c6}
-  .mascot{display:flex;flex-direction:column;align-items:center;gap:0;pointer-events:none}
+  .mascot{display:flex;flex-direction:column;align-items:center;gap:0;pointer-events:none;position:relative}
   .mascot svg{display:block;width:72px;height:86px;overflow:visible;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
   .mascot .hl{display:flex;flex-direction:column;align-items:center;line-height:1.1;margin-top:-2px}
   .mascot .hl b{font-size:13px;font-variant-numeric:tabular-nums}
   .mascot .hl i{font-style:normal;font-size:8px;letter-spacing:.08em;color:var(--muted)}
   .mascot .h{transform-box:fill-box;transform-origin:50% 20%;transition:opacity .8s ease,transform .8s cubic-bezier(.2,1.15,.3,1)}
   .mascot .h.off{opacity:0;transform:translateY(-10px) rotate(14deg) scale(.72)}
+  /* 做完动一动：发丝按刘海→头顶依次长回，头上一圈金光和星点 */
+  .mascot.regrow{filter:drop-shadow(0 0 10px rgba(255,214,90,.95)) drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+  .mascot.regrow .h{transform-origin:50% 50%;transition:none;animation:hair-sprout .55s cubic-bezier(.16,1.35,.3,1) both;animation-delay:calc(var(--i, 0) * 38ms)}
+  .mascot.regrow .h.off{animation:none;opacity:0;transform:translateY(-10px) rotate(14deg) scale(.72)}
+  .mascot.regrow .hl b{animation:hair-pct-pop .9s ease}
+  .mascot.regrow::after{content:"";position:absolute;left:50%;top:36%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,160,.95) 0%,rgba(255,196,64,.0) 70%);animation:hair-flash .75s ease-out both;pointer-events:none;z-index:2}
+  .mascot .grow-fx{position:absolute;left:-8px;right:-8px;top:-6px;height:96px;pointer-events:none;overflow:visible;z-index:3}
+  .mascot .grow-fx i{position:absolute;width:13px;height:13px;margin:-6px 0 0 -6px;background:#ffe27a;clip-path:polygon(50% 0,63% 38%,100% 50%,63% 62%,50% 100%,37% 62%,0 50%,37% 38%);opacity:0;animation:spark-pop 1.05s ease-out both;animation-delay:var(--d,0s);transform:scale(var(--s,1))}
+  .mascot .grow-fx i:nth-child(3n){background:#9ff0d2}
+  .mascot .grow-fx i:nth-child(3n+2){background:#fff4c2}
+  @keyframes hair-sprout{0%{opacity:0;transform:scale(.12) rotate(-18deg)}62%{opacity:1;transform:scale(1.18) rotate(6deg)}100%{opacity:1;transform:none}}
+  @keyframes hair-regrow-pop{0%{transform:scale(.88) translateY(8px) rotate(-5deg)}30%{transform:scale(1.12) translateY(-12px) rotate(6deg)}58%{transform:scale(.97) translateY(-2px) rotate(-2deg)}100%{transform:scale(1) translateY(0) rotate(0)}}
+  @keyframes hair-flash{0%{transform:scale(.35);opacity:0}32%{transform:scale(1.85);opacity:1}100%{transform:scale(3.1);opacity:0}}
+  @keyframes hair-pct-pop{0%,100%{transform:scale(1)}40%{transform:scale(1.28)}}
+  @keyframes spark-pop{0%{opacity:0;transform:scale(0) rotate(0)}22%{opacity:1;transform:scale(calc(var(--s,1) * 1.35)) rotate(18deg)}100%{opacity:0;transform:scale(calc(var(--s,1) * .35)) translateY(-18px) rotate(52deg)}}
   .buddy{position:fixed;z-index:40;top:54px;right:8px;width:176px;padding:10px 10px 12px;background:rgba(20,22,28,.20);border:1px solid rgba(255,255,255,.10);border-radius:16px;box-shadow:0 8px 22px rgba(0,0,0,.16);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:grab;user-select:none;touch-action:none;display:flex;flex-direction:column;align-items:center;transition:left 7.2s cubic-bezier(.4,.08,.2,1),top 7.2s cubic-bezier(.4,.08,.2,1)}
   .buddy.dragging{cursor:grabbing;animation:none;transition:none!important}
   .buddy.wander .mascot{animation:buddy-bob 2.8s ease-in-out infinite}
+  .buddy.wander .mascot.regrow{animation:hair-regrow-pop .85s cubic-bezier(.18,1.4,.32,1)}
   .buddy.dragging .mascot{animation:none}
   @keyframes buddy-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
   .say{margin:0 0 6px;max-width:100%;padding:0;color:rgba(180,188,200,.88);font-size:10px;font-weight:500;line-height:1.35;text-align:center;pointer-events:none}
