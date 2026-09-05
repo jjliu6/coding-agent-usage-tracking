@@ -6,6 +6,6 @@ Parked notes. None of these are scheduled. They live in the repo for later; they
 
 # 产品想法
 
-已搁置的笔记。都没有排期。只存在仓库里，不会发到落地页。
+已搁置的笔记。都没有排期。只存在仓库里；落地页不会链到这些笔记。
 
 - [从本地用量生成 Insight](./insights-from-local-usage.md) — 原始用量导出的北极星方向（2026-09-05，已搁置）
