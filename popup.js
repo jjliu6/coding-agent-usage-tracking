@@ -541,11 +541,23 @@ function stopHairRegrow(box) {
   if (box.classList && box.classList.remove) box.classList.remove('regrow');
   const fx = box.querySelector ? box.querySelector('.grow-fx') : null;
   if (fx && fx.parentNode) fx.parentNode.removeChild(fx);
+  const buddy = document.getElementById('buddy');
+  if (buddy && buddy.style && !(buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging'))) {
+    buddy.style.transition = buddyGlide();
+  }
 }
 
 function startHairRegrow(box) {
   if (!box) return;
   if (box.classList && box.classList.add) box.classList.add('regrow');
+  const buddy = document.getElementById('buddy');
+  if (buddy && buddy.style && buddy.getBoundingClientRect) {
+    const r = buddy.getBoundingClientRect();
+    buddy.style.left = r.left + 'px';
+    buddy.style.top = r.top + 'px';
+    buddy.style.right = 'auto';
+    buddy.style.transition = 'none';
+  }
   const strands = box.querySelectorAll ? box.querySelectorAll('.h') : null;
   if (strands && strands.forEach) {
     strands.forEach((el) => {
@@ -650,6 +662,7 @@ function wanderBuddy() {
   const buddy = document.getElementById('buddy');
   if (!buddy || buddy.hidden || !buddy.getBoundingClientRect) return;
   if (buddy.classList && buddy.classList.contains && buddy.classList.contains('dragging')) return;
+  if (hairRegrowTimer != null) return;
   const w = typeof window !== 'undefined' ? window : {};
   const r = buddy.getBoundingClientRect();
   const fromX = w.__buddyTarget && typeof w.__buddyTarget.x === 'number' ? w.__buddyTarget.x : r.left;

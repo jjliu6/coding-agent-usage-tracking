@@ -27,9 +27,9 @@
   .mascot.regrow .h{transform-origin:50% 50%;transition:none;animation:hair-sprout .55s cubic-bezier(.16,1.35,.3,1) both;animation-delay:calc(var(--i, 0) * 38ms)}
   .mascot.regrow .h.off{animation:none;opacity:0;transform:translateY(-10px) rotate(14deg) scale(.72)}
   .mascot.regrow .hl b{animation:hair-pct-pop .9s ease}
-  .mascot.regrow::after{content:"";position:absolute;left:50%;top:36%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,160,.9) 0%,rgba(255,196,64,.0) 70%);animation:hair-flash .7s ease-out both;pointer-events:none}
-  .mascot .grow-fx{position:absolute;left:0;right:0;top:0;height:86px;pointer-events:none;overflow:visible}
-  .mascot .grow-fx i{position:absolute;width:9px;height:9px;margin:-4px 0 0 -4px;background:#ffe27a;clip-path:polygon(50% 0,63% 38%,100% 50%,63% 62%,50% 100%,37% 62%,0 50%,37% 38%);opacity:0;animation:spark-pop .95s ease-out both;animation-delay:var(--d,0s);transform:scale(var(--s,1))}
+  .mascot.regrow::after{content:"";position:absolute;left:50%;top:36%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,160,.95) 0%,rgba(255,196,64,.0) 70%);animation:hair-flash .75s ease-out both;pointer-events:none;z-index:2}
+  .mascot .grow-fx{position:absolute;left:-8px;right:-8px;top:-6px;height:96px;pointer-events:none;overflow:visible;z-index:3}
+  .mascot .grow-fx i{position:absolute;width:13px;height:13px;margin:-6px 0 0 -6px;background:#ffe27a;clip-path:polygon(50% 0,63% 38%,100% 50%,63% 62%,50% 100%,37% 62%,0 50%,37% 38%);opacity:0;animation:spark-pop 1.05s ease-out both;animation-delay:var(--d,0s);transform:scale(var(--s,1))}
   .mascot .grow-fx i:nth-child(3n){background:#9ff0d2}
   .mascot .grow-fx i:nth-child(3n+2){background:#fff4c2}
   @keyframes hair-sprout{0%{opacity:0;transform:scale(.12) rotate(-18deg)}62%{opacity:1;transform:scale(1.18) rotate(6deg)}100%{opacity:1;transform:none}}
