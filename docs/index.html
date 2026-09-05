@@ -702,28 +702,38 @@ const copyBtn = document.getElementById('share-copy');
 const copyLabel = document.getElementById('share-copy-label');
 const copiedText = ((document.getElementById('share-copied') || {}).textContent || 'Copied').trim();
 const copyIdle = copyLabel ? copyLabel.textContent : '';
-async function copyShareLink() {
+let copyTimer = 0;
+function markCopied() {
+  if (!copyBtn || !copyLabel) return;
+  copyLabel.textContent = copiedText;
+  copyBtn.classList.add('copied');
+  clearTimeout(copyTimer);
+  copyTimer = setTimeout(() => {
+    copyLabel.textContent = copyIdle;
+    copyBtn.classList.remove('copied');
+  }, 2000);
+}
+function copyShareLink() {
   const { url } = sharePayload();
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(url);
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = url;
-      ta.setAttribute('readonly', '');
-      ta.style.cssText = 'position:fixed;left:-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    if (copyLabel) copyLabel.textContent = copiedText;
-    if (copyBtn) copyBtn.classList.add('copied');
-    setTimeout(() => {
-      if (copyLabel) copyLabel.textContent = copyIdle;
-      if (copyBtn) copyBtn.classList.remove('copied');
-    }, 2000);
-  } catch (e) { /* clipboard permission denied — leave the button as-is */ }
+  // execCommand must run in the same turn as the click (user activation).
+  // The async Clipboard API is nicer when it works, but on some desktops it
+  // rejects; falling back after await is too late, so we try both.
+  const ta = document.createElement('textarea');
+  ta.value = url;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;padding:0;border:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
+  document.body.removeChild(ta);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(markCopied).catch(() => { if (ok) markCopied(); });
+    if (ok) markCopied();
+    return;
+  }
+  if (ok) markCopied();
 }
 if (copyBtn) copyBtn.addEventListener('click', copyShareLink);
 </script>
